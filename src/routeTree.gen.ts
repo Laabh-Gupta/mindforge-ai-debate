@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DebateRouteImport } from './routes/debate'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ResultRouteImport } from './routes/result'
 import { Route as SignupRouteImport } from './routes/signup'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +37,16 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResultRoute = ResultRouteImport.update({
+  id: '/result',
+  path: '/result',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -46,6 +58,8 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
+  '/result': typeof ResultRoute
   '/signup': typeof SignupRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +67,8 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
+  '/result': typeof ResultRoute
   '/signup': typeof SignupRoute
 }
 export interface FileRoutesById {
@@ -61,14 +77,38 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
+  '/result': typeof ResultRoute
   '/signup': typeof SignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/debate' | '/login' | '/signup'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/debate'
+    | '/login'
+    | '/profile'
+    | '/result'
+    | '/signup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/debate' | '/login' | '/signup'
-  id: '__root__' | '/' | '/dashboard' | '/debate' | '/login' | '/signup'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/debate'
+    | '/login'
+    | '/profile'
+    | '/result'
+    | '/signup'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/debate'
+    | '/login'
+    | '/profile'
+    | '/result'
+    | '/signup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +116,8 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DebateRoute: typeof DebateRoute
   LoginRoute: typeof LoginRoute
+  ProfileRoute: typeof ProfileRoute
+  ResultRoute: typeof ResultRoute
   SignupRoute: typeof SignupRoute
 }
 
@@ -109,6 +151,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/result': {
+      id: '/result'
+      path: '/result'
+      fullPath: '/result'
+      preLoaderRoute: typeof ResultRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -124,6 +180,8 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   DebateRoute: DebateRoute,
   LoginRoute: LoginRoute,
+  ProfileRoute: ProfileRoute,
+  ResultRoute: ResultRoute,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
