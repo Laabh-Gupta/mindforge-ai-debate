@@ -73,6 +73,7 @@ Assess ONLY the STUDENT's contributions. Score each dimension from 0 to 100 (bia
       });
       return normalize(output);
     } catch (error) {
+      console.error("[analyzeDebate]", error);
       if (NoObjectGeneratedError.isInstance(error)) {
         try {
           const text = error.text ?? "";
