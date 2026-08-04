@@ -53,7 +53,7 @@ export const analyzeDebate = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key || data.turns.length === 0) return null;
 
-    const gateway = createLovableAiGatewayProvider(key);
+    const gateway = createLovableAiGatewayProvider(key, undefined, { structuredOutputs: true });
     const transcript = data.turns
       .map((t) => `${t.role === "user" ? "STUDENT" : "AI"}: ${t.content}`)
       .join("\n\n");
