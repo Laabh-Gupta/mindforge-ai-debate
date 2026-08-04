@@ -1,10 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Lightbulb, TrendingDown, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { FloatingNav } from "@/components/mindforge/FloatingNav";
 import { ScoreRing } from "@/components/mindforge/ScoreRing";
 import { resultInsights, scoreBreakdown } from "@/lib/mindforge-data";
+import { analyzeDebate, type DebateAnalysis } from "@/lib/debate-score.functions";
+import { DEBATE_TRANSCRIPT_KEY, type StoredTranscript } from "@/services/ai-debate";
 
 const title = "Debate Result — MindForge";
 const description =
@@ -22,9 +26,21 @@ export const Route = createFileRoute("/result")({
   component: ResultPage,
 });
 
-const overall = Math.round(
-  scoreBreakdown.reduce((sum, s) => sum + s.value, 0) / scoreBreakdown.length,
-);
+const sampleSummary =
+  "Solid structure, thin evidence. Your reasoning held for nine turns before the counterpoint went unanswered.";
+
+function toBreakdown(analysis: DebateAnalysis | null) {
+  if (!analysis) return scoreBreakdown;
+  const s = analysis.scores;
+  return [
+    { label: "Logic", value: s.logic },
+    { label: "Evidence", value: s.evidence },
+    { label: "Clarity", value: s.clarity },
+    { label: "Confidence", value: s.confidence },
+    { label: "Bias", value: s.bias },
+    { label: "Communication", value: s.communication },
+  ];
+}
 
 function InsightList({
   title: heading,
@@ -56,6 +72,39 @@ function InsightList({
 }
 
 function ResultPage() {
+  const runAnalysis = useServerFn(analyzeDebate);
+  const [analysis, setAnalysis] = useState<DebateAnalysis | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let stored: StoredTranscript | null = null;
+    try {
+      const raw = sessionStorage.getItem(DEBATE_TRANSCRIPT_KEY);
+      stored = raw ? (JSON.parse(raw) as StoredTranscript) : null;
+    } catch {
+      stored = null;
+    }
+    if (!stored || stored.turns.length === 0) return;
+
+    setLoading(true);
+    void runAnalysis({ data: { topic: stored.topic, turns: stored.turns } })
+      .then((result) => {
+        if (!cancelled) setAnalysis(result);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [runAnalysis]);
+
+  const breakdown = toBreakdown(analysis);
+  const overall = Math.round(breakdown.reduce((sum, s) => sum + s.value, 0) / breakdown.length);
+  const insights = analysis ?? resultInsights;
+
   return (
     <div className="min-h-screen pb-20">
       <FloatingNav />
@@ -63,15 +112,18 @@ function ResultPage() {
       <main className="mx-auto max-w-6xl px-5 pt-10">
         <section className="glass animate-rise rounded-3xl p-6 text-center sm:p-10">
           <p className="text-xs tracking-widest text-muted-foreground uppercase">Overall score</p>
-          <p className="mt-2 font-display text-6xl font-bold text-gradient">{overall}</p>
+          <p className="mt-2 font-display text-6xl font-bold text-gradient">
+            {loading ? "…" : overall}
+          </p>
           <p className="mx-auto mt-3 max-w-lg text-sm text-muted-foreground">
-            Solid structure, thin evidence. Your reasoning held for nine turns before the economic
-            counterpoint went unanswered.
+            {loading
+              ? "Reviewing your transcript..."
+              : (analysis?.summary ?? sampleSummary)}
           </p>
         </section>
 
         <section className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
-          {scoreBreakdown.map((s) => (
+          {breakdown.map((s) => (
             <div key={s.label} className="glass rounded-2xl p-4">
               <ScoreRing label={s.label} value={s.value} size={110} />
             </div>
@@ -82,13 +134,13 @@ function ResultPage() {
           <InsightList
             title="Strengths"
             icon={CheckCircle2}
-            items={resultInsights.strengths}
+            items={insights.strengths}
             tone="text-success"
           />
           <InsightList
             title="Weaknesses"
             icon={TrendingDown}
-            items={resultInsights.weaknesses}
+            items={insights.weaknesses}
             tone="text-warning"
           />
 
@@ -98,7 +150,12 @@ function ResultPage() {
               <h3 className="text-base font-semibold">Logical Fallacies Found</h3>
             </div>
             <ul className="mt-4 space-y-3">
-              {resultInsights.fallacies.map((f) => (
+              {insights.fallacies.length === 0 && (
+                <li className="text-sm text-muted-foreground">
+                  No clear logical fallacies detected in this debate.
+                </li>
+              )}
+              {insights.fallacies.map((f) => (
                 <li key={f.name} className="rounded-xl bg-secondary/60 px-4 py-3">
                   <p className="text-sm font-medium">{f.name}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{f.detail}</p>
@@ -110,7 +167,7 @@ function ResultPage() {
           <InsightList
             title="Suggestions for Improvement"
             icon={Lightbulb}
-            items={resultInsights.suggestions}
+            items={insights.suggestions}
             tone="text-primary"
           />
         </section>
