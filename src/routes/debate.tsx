@@ -1,17 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useChat } from "@ai-sdk/react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { DefaultChatTransport, type UIMessage } from "ai";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Mic, SendHorizontal, Sparkle, Flag, Play } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FloatingNav } from "@/components/mindforge/FloatingNav";
 import { suggestedTopics } from "@/lib/mindforge-data";
-import {
-  generateAiRebuttal,
-  generateOpeningChallenge,
-  type DebateMessage,
-} from "@/services/ai-debate";
+import { OPENING_TRIGGER } from "@/lib/debate-prompt";
+import { DEBATE_TRANSCRIPT_KEY, type StoredTranscript } from "@/services/ai-debate";
 
 const title = "Debate Room — MindForge";
 const description =
@@ -29,46 +29,86 @@ export const Route = createFileRoute("/debate")({
   component: DebateRoom,
 });
 
+function messageText(message: UIMessage) {
+  return message.parts
+    .map((part) => (part.type === "text" ? part.text : ""))
+    .join("")
+    .trim();
+}
+
 function DebateRoom() {
+  const navigate = useNavigate();
   const [topic, setTopic] = useState("");
-  const [started, setStarted] = useState(false);
-  const [messages, setMessages] = useState<DebateMessage[]>([]);
+  const [activeTopic, setActiveTopic] = useState("");
   const [draft, setDraft] = useState("");
-  const [thinking, setThinking] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        body: () => ({ topic: activeTopic }),
+      }),
+    [activeTopic],
+  );
+
+  const { messages, sendMessage, status, error } = useChat({
+    id: activeTopic || "idle",
+    transport,
+    onError: (err) => {
+      toast.error(err.message || "The AI could not respond. Please try again.");
+    },
+  });
+
+  const started = activeTopic.length > 0;
+  const busy = status === "submitted" || status === "streaming";
+
+  const visible = messages.filter((m) => messageText(m) !== OPENING_TRIGGER);
+  const lastIsStreamingAssistant =
+    status === "streaming" && visible.at(-1)?.role === "assistant";
+  const thinking = busy && !lastIsStreamingAssistant;
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, thinking]);
 
-  function push(role: DebateMessage["role"], content: string) {
-    setMessages((prev) => [
-      ...prev,
-      { id: `${role}-${prev.length}-${Date.now()}`, role, content, createdAt: Date.now() },
-    ]);
-  }
-
-  async function startDebate(chosen: string) {
+  function startDebate(chosen: string) {
     const t = chosen.trim();
     if (!t) return;
     setTopic(t);
-    setStarted(true);
-    setThinking(true);
-    const opening = await generateOpeningChallenge(t);
-    setThinking(false);
-    push("ai", opening);
+    setActiveTopic(t);
   }
 
-  async function send(e: FormEvent) {
+  // Ask the model for its opening challenge as soon as a motion is chosen.
+  useEffect(() => {
+    if (!activeTopic) return;
+    if (messages.length > 0) return;
+    void sendMessage({ text: OPENING_TRIGGER });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTopic]);
+
+  function send(e: FormEvent) {
     e.preventDefault();
     const text = draft.trim();
-    if (!text || thinking) return;
-    push("user", text);
+    if (!text || busy) return;
     setDraft("");
-    setThinking(true);
-    const reply = await generateAiRebuttal(text, messages.length);
-    setThinking(false);
-    push("ai", reply);
+    void sendMessage({ text });
+  }
+
+  function finishDebate() {
+    const transcript: StoredTranscript = {
+      topic: activeTopic,
+      turns: visible.map((m) => ({
+        role: m.role === "user" ? ("user" as const) : ("ai" as const),
+        content: messageText(m),
+      })),
+    };
+    try {
+      sessionStorage.setItem(DEBATE_TRANSCRIPT_KEY, JSON.stringify(transcript));
+    } catch {
+      // storage unavailable — the result page falls back to a sample analysis
+    }
+    void navigate({ to: "/result" });
   }
 
   return (
@@ -86,7 +126,7 @@ function DebateRoom() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                void startDebate(topic);
+                startDebate(topic);
               }}
               className="glass mt-6 flex flex-col gap-3 rounded-2xl p-4 sm:flex-row"
             >
@@ -112,7 +152,7 @@ function DebateRoom() {
                 <button
                   key={t}
                   type="button"
-                  onClick={() => void startDebate(t)}
+                  onClick={() => startDebate(t)}
                   className="glass hover-lift rounded-2xl px-5 py-4 text-left text-sm"
                 >
                   <Sparkle className="mb-2 h-4 w-4 text-primary" />
@@ -126,15 +166,15 @@ function DebateRoom() {
             <div className="glass grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl px-5 py-4">
               <div className="min-w-0">
                 <p className="text-xs tracking-widest text-muted-foreground uppercase">Motion</p>
-                <h1 className="truncate text-base font-semibold">{topic}</h1>
+                <h1 className="truncate text-base font-semibold">{activeTopic}</h1>
               </div>
               <span className="shrink-0 rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">
-                Turn {Math.ceil(messages.length / 2)}
+                Turn {Math.max(1, Math.ceil(visible.length / 2))}
               </span>
             </div>
 
             <div className="mt-5 space-y-4">
-              {messages.map((m) => (
+              {visible.map((m) => (
                 <div
                   key={m.id}
                   className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
@@ -146,12 +186,12 @@ function DebateRoom() {
                         : "max-w-[90%] rounded-2xl rounded-bl-md px-1 text-sm leading-relaxed whitespace-pre-line text-foreground"
                     }
                   >
-                    {m.role === "ai" && (
+                    {m.role === "assistant" && (
                       <p className="mb-2 text-xs font-semibold tracking-widest text-primary uppercase">
                         MindForge AI
                       </p>
                     )}
-                    {m.content}
+                    {messageText(m)}
                   </div>
                 </div>
               ))}
@@ -169,6 +209,11 @@ function DebateRoom() {
                   </span>
                   Building a counter-argument...
                 </div>
+              )}
+              {error && !busy && (
+                <p className="px-1 text-sm text-destructive">
+                  {error.message || "The AI could not respond. Please try again."}
+                </p>
               )}
               <div ref={endRef} />
             </div>
@@ -193,7 +238,7 @@ function DebateRoom() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={thinking || !draft.trim()}
+                  disabled={busy || !draft.trim()}
                   className="bg-gradient-brand text-primary-foreground"
                 >
                   Send <SendHorizontal className="ml-1 h-4 w-4" />
@@ -201,7 +246,7 @@ function DebateRoom() {
               </div>
             </form>
 
-            {messages.length > 1 && (
+            {visible.length > 1 && (
               <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <Button
                   variant="outline"
@@ -211,12 +256,11 @@ function DebateRoom() {
                   Continue Debate
                 </Button>
                 <Button
-                  asChild
                   className="h-11 flex-1 bg-gradient-brand text-primary-foreground"
+                  onClick={finishDebate}
+                  disabled={busy}
                 >
-                  <Link to="/result">
-                    <Flag className="mr-1 h-4 w-4" /> Finish Debate
-                  </Link>
+                  <Flag className="mr-1 h-4 w-4" /> Finish Debate
                 </Button>
               </div>
             )}
