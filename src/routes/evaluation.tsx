@@ -219,12 +219,3 @@ function EvaluationPage() {
     </div>
   );
 }
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/evaluation')({
-  component: RouteComponent,
-})
-
-function RouteComponent() {
-  return <div>Hello "/evaluation"!</div>
-}
