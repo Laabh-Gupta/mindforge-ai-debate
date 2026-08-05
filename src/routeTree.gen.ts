@@ -12,11 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DebateRouteImport } from './routes/debate'
+import { Route as EvaluationRouteImport } from './routes/evaluation'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ObserverRouteImport } from './routes/observer'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ResultRouteImport } from './routes/result'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiSessionRouteImport } from './routes/api/session'
+import { Route as TrainIndexRouteImport } from './routes/train.index'
+import { Route as TrainModeRouteImport } from './routes/train.$mode'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -33,9 +38,19 @@ const DebateRoute = DebateRouteImport.update({
   path: '/debate',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EvaluationRoute = EvaluationRouteImport.update({
+  id: '/evaluation',
+  path: '/evaluation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ObserverRoute = ObserverRouteImport.update({
+  id: '/observer',
+  path: '/observer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -58,37 +73,67 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSessionRoute = ApiSessionRouteImport.update({
+  id: '/api/session',
+  path: '/api/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrainIndexRoute = TrainIndexRouteImport.update({
+  id: '/train/',
+  path: '/train/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrainModeRoute = TrainModeRouteImport.update({
+  id: '/train/$mode',
+  path: '/train/$mode',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
+  '/evaluation': typeof EvaluationRoute
   '/login': typeof LoginRoute
+  '/observer': typeof ObserverRoute
   '/profile': typeof ProfileRoute
   '/result': typeof ResultRoute
   '/signup': typeof SignupRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/session': typeof ApiSessionRoute
+  '/train/$mode': typeof TrainModeRoute
+  '/train/': typeof TrainIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
+  '/evaluation': typeof EvaluationRoute
   '/login': typeof LoginRoute
+  '/observer': typeof ObserverRoute
   '/profile': typeof ProfileRoute
   '/result': typeof ResultRoute
   '/signup': typeof SignupRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/session': typeof ApiSessionRoute
+  '/train/$mode': typeof TrainModeRoute
+  '/train': typeof TrainIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
+  '/evaluation': typeof EvaluationRoute
   '/login': typeof LoginRoute
+  '/observer': typeof ObserverRoute
   '/profile': typeof ProfileRoute
   '/result': typeof ResultRoute
   '/signup': typeof SignupRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/session': typeof ApiSessionRoute
+  '/train/$mode': typeof TrainModeRoute
+  '/train/': typeof TrainIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,42 +141,62 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/debate'
+    | '/evaluation'
     | '/login'
+    | '/observer'
     | '/profile'
     | '/result'
     | '/signup'
     | '/api/chat'
+    | '/api/session'
+    | '/train/$mode'
+    | '/train/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
     | '/debate'
+    | '/evaluation'
     | '/login'
+    | '/observer'
     | '/profile'
     | '/result'
     | '/signup'
     | '/api/chat'
+    | '/api/session'
+    | '/train/$mode'
+    | '/train'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
     | '/debate'
+    | '/evaluation'
     | '/login'
+    | '/observer'
     | '/profile'
     | '/result'
     | '/signup'
     | '/api/chat'
+    | '/api/session'
+    | '/train/$mode'
+    | '/train/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   DebateRoute: typeof DebateRoute
+  EvaluationRoute: typeof EvaluationRoute
   LoginRoute: typeof LoginRoute
+  ObserverRoute: typeof ObserverRoute
   ProfileRoute: typeof ProfileRoute
   ResultRoute: typeof ResultRoute
   SignupRoute: typeof SignupRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiSessionRoute: typeof ApiSessionRoute
+  TrainModeRoute: typeof TrainModeRoute
+  TrainIndexRoute: typeof TrainIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -157,11 +222,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DebateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/evaluation': {
+      id: '/evaluation'
+      path: '/evaluation'
+      fullPath: '/evaluation'
+      preLoaderRoute: typeof EvaluationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/observer': {
+      id: '/observer'
+      path: '/observer'
+      fullPath: '/observer'
+      preLoaderRoute: typeof ObserverRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -192,6 +271,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/session': {
+      id: '/api/session'
+      path: '/api/session'
+      fullPath: '/api/session'
+      preLoaderRoute: typeof ApiSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/train/': {
+      id: '/train/'
+      path: '/train'
+      fullPath: '/train/'
+      preLoaderRoute: typeof TrainIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/train/$mode': {
+      id: '/train/$mode'
+      path: '/train/$mode'
+      fullPath: '/train/$mode'
+      preLoaderRoute: typeof TrainModeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -199,11 +299,16 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   DebateRoute: DebateRoute,
+  EvaluationRoute: EvaluationRoute,
   LoginRoute: LoginRoute,
+  ObserverRoute: ObserverRoute,
   ProfileRoute: ProfileRoute,
   ResultRoute: ResultRoute,
   SignupRoute: SignupRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiSessionRoute: ApiSessionRoute,
+  TrainModeRoute: TrainModeRoute,
+  TrainIndexRoute: TrainIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

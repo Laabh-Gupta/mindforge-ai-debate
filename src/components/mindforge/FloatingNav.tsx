@@ -48,7 +48,7 @@ export function FloatingNav({ variant = "app" }: { variant?: "app" | "marketing"
             </>
           ) : (
             <Button asChild size="sm" className="bg-gradient-brand text-primary-foreground">
-              <Link to="/debate">New debate</Link>
+              <Link to="/train">Training Hub</Link>
             </Button>
           )}
         </div>
