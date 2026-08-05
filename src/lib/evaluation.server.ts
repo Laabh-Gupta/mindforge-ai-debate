@@ -46,7 +46,7 @@ export function normalizeEvaluation(raw: SessionEvaluation): SessionEvaluation {
 export function buildEvaluationPrompt(input: {
   modeName: string;
   topic: string;
-  variant?: string;
+  variant?: string | undefined;
   transcript: string;
   observer: boolean;
 }) {
