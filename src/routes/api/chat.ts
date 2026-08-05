@@ -2,7 +2,20 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 
 import { createLovableAiGatewayProvider, getLovableAiGatewayRunId } from "@/lib/ai-gateway.server";
-import { OPENING_TRIGGER, buildDebateSystemPrompt, buildOpeningPrompt } from "@/lib/debate-prompt";
+import {
+  OPENING_TRIGGER,
+  buildClarificationDirective,
+  buildDebateSystemPrompt,
+  buildOpeningPrompt,
+  isClarificationRequest,
+} from "@/lib/debate-prompt";
+
+function textOf(message: UIMessage) {
+  return (message.parts ?? [])
+    .map((part) => (part.type === "text" ? part.text : ""))
+    .join("")
+    .trim();
+}
 
 type ChatRequestBody = { messages?: unknown; topic?: unknown };
 
@@ -36,12 +49,26 @@ export const Route = createFileRoute("/api/chat")({
         const initialRunId = getLovableAiGatewayRunId(request);
         const gateway = createLovableAiGatewayProvider(key, initialRunId);
 
+        // Clarification detector: if the latest user turn asks "what do you mean?",
+        // force an explanation of the previous reply instead of a new counterargument.
+        const lastUser = [...uiMessages].reverse().find((m) => m.role === "user");
+        const lastAssistant = [...uiMessages].reverse().find((m) => m.role === "assistant");
+        const lastUserText = lastUser ? textOf(lastUser) : "";
+        const previousReply = lastAssistant ? textOf(lastAssistant) : "";
+        const clarifying =
+          previousReply.length > 0 &&
+          lastUserText.length > 0 &&
+          lastUserText !== buildOpeningPrompt(topic) &&
+          isClarificationRequest(lastUserText);
+
         try {
           const result = streamText({
             model: gateway("google/gemini-3.6-flash"),
-            system: buildDebateSystemPrompt(topic),
+            system:
+              buildDebateSystemPrompt(topic) +
+              (clarifying ? buildClarificationDirective(previousReply) : ""),
             messages: await convertToModelMessages(uiMessages),
-            temperature: 0.8,
+            temperature: clarifying ? 0.5 : 0.8,
           });
 
           return result.toUIMessageStreamResponse({
