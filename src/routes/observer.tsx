@@ -107,7 +107,7 @@ function ObserverPage() {
               <Input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder={observerMode.placeholder}
+                placeholder="e.g. Should AI-generated art qualify for national awards?"
                 aria-label="Discussion topic"
                 className="h-12 flex-1 bg-secondary/40"
               />
