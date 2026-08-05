@@ -52,3 +52,52 @@ Plain conversational prose. 2 to 5 short paragraphs, roughly 90-180 words. No ma
 export function buildOpeningPrompt(topic: string) {
   return `Open the debate on the motion "${topic}". In two short paragraphs: frame what is genuinely at stake in this specific motion within its own subject matter, make clear you will argue the opposing side of whatever position they take, and then ask them to state their position and their single strongest reason. Do not argue a side yet, do not use generic debate-coach boilerplate, and end with exactly one question.`;
 }
+
+const CLARIFICATION_PATTERNS: RegExp[] = [
+  /\bwhat do you mean\b/,
+  /\bwhat does that mean\b/,
+  /\bwhat's that mean\b/,
+  /\bwhat is that\b/,
+  /\bmeaning of\b/,
+  /\bwhat do you mean by\b/,
+  /\bcan you (please )?(explain|clarify|elaborate|rephrase|simplify)\b/,
+  /\bcould you (please )?(explain|clarify|elaborate|rephrase|simplify)\b/,
+  /\bplease (explain|clarify|elaborate|rephrase|simplify)\b/,
+  /\b(explain|clarify|rephrase|simplify) (that|this|it|again|your point)\b/,
+  /\bi (don't|do not|dont|didn't|didnt) (understand|get|follow)\b/,
+  /\bi'm (confused|lost)\b/,
+  /\bim (confused|lost)\b/,
+  /\bnot sure what you (mean|meant)\b/,
+  /\bunclear\b/,
+  /\bcome again\b/,
+  /\bin simple(r)? (terms|words|language)\b/,
+  /\bdumb it down\b/,
+  /\belaborate\b/,
+  /\bhuh\?/,
+];
+
+/** True when the student is asking for an explanation rather than making an argument. */
+export function isClarificationRequest(text: string) {
+  const normalized = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (!normalized || normalized.length > 240) return false;
+  return CLARIFICATION_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+/** Hard override appended to the system prompt when clarification is detected. */
+export function buildClarificationDirective(previousReply: string) {
+  return `
+
+=== CLARIFICATION MODE — ACTIVE THIS TURN (overrides the reply structure above) ===
+The student is NOT making an argument. They are asking you to explain what you just said. This turn only:
+- Do NOT restate their position, do NOT acknowledge, do NOT introduce a new counterargument, do NOT advance the debate.
+- Explain the point you made in your previous reply in plain, simple language, as if to someone new to the subject.
+- Use completely different wording from your previous reply. Reusing its sentences, phrasing or examples is a failure. Do not quote yourself.
+- Define any term or concept that could have confused them, and give one short concrete illustration or analogy drawn from this same subject.
+- Keep it to 2 to 4 short paragraphs, under 150 words.
+- End by checking whether that landed and inviting them to respond to the point once it's clear — exactly one question.
+
+Your previous reply, which you must explain WITHOUT repeating its wording:
+"""
+${previousReply}
+"""`;
+}
