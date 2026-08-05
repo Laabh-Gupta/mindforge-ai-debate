@@ -19,6 +19,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiSessionRouteImport } from './routes/api/session'
 import { Route as TrainIndexRouteImport } from './routes/train.index'
+import { Route as TrainModeRouteImport } from './routes/train.$mode'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const TrainIndexRoute = TrainIndexRouteImport.update({
   path: '/train/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrainModeRoute = TrainModeRouteImport.update({
+  id: '/train/$mode',
+  path: '/train/$mode',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/api/chat': typeof ApiChatRoute
   '/api/session': typeof ApiSessionRoute
+  '/train/$mode': typeof TrainModeRoute
   '/train/': typeof TrainIndexRoute
 }
 export interface FileRoutesByTo {
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/api/chat': typeof ApiChatRoute
   '/api/session': typeof ApiSessionRoute
+  '/train/$mode': typeof TrainModeRoute
   '/train': typeof TrainIndexRoute
 }
 export interface FileRoutesById {
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/api/chat': typeof ApiChatRoute
   '/api/session': typeof ApiSessionRoute
+  '/train/$mode': typeof TrainModeRoute
   '/train/': typeof TrainIndexRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/api/chat'
     | '/api/session'
+    | '/train/$mode'
     | '/train/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/api/chat'
     | '/api/session'
+    | '/train/$mode'
     | '/train'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/api/chat'
     | '/api/session'
+    | '/train/$mode'
     | '/train/'
   fileRoutesById: FileRoutesById
 }
@@ -157,6 +169,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiSessionRoute: typeof ApiSessionRoute
+  TrainModeRoute: typeof TrainModeRoute
   TrainIndexRoute: typeof TrainIndexRoute
 }
 
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrainIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/train/$mode': {
+      id: '/train/$mode'
+      path: '/train/$mode'
+      fullPath: '/train/$mode'
+      preLoaderRoute: typeof TrainModeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -245,6 +265,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   ApiChatRoute: ApiChatRoute,
   ApiSessionRoute: ApiSessionRoute,
+  TrainModeRoute: TrainModeRoute,
   TrainIndexRoute: TrainIndexRoute,
 }
 export const routeTree = rootRouteImport
