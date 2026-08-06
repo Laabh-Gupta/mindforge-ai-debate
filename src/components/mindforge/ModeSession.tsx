@@ -2,7 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Flag, Play, SendHorizontal, Sparkle, Mic, Timer as TimerIcon } from "lucide-react";
+import { Brain, Flag, Play, SendHorizontal, Sparkle, Mic, Timer as TimerIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -10,7 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SpeakerBubble, parseSpeakerTurns } from "@/components/mindforge/SpeakerTurn";
-import { SESSION_KEY, type StoredSession } from "@/lib/evaluation-shared";
+import {
+  ThinkingCard,
+  ThinkingPanel,
+  type ThinkingPair,
+} from "@/components/mindforge/ThinkingView";
+import { SESSION_KEY, THINKING_VIEW_KEY, type StoredSession } from "@/lib/evaluation-shared";
+import { defaultProfileIdForMode, loadSelectedProfileId } from "@/lib/evaluation-profiles";
 import { OPENING_TRIGGER } from "@/lib/session-prompt";
 import { generateExtemporeTopic } from "@/lib/session.functions";
 import type { TrainingMode } from "@/lib/training-modes";
@@ -30,6 +36,15 @@ function formatClock(seconds: number) {
 
 type Phase = "setup" | "prep" | "live";
 
+/** Modes with a real back-and-forth exchange to explain. */
+const THINKING_MODES = new Set([
+  "debate",
+  "group-discussion",
+  "case-discussion",
+  "interview",
+  "negotiation",
+]);
+
 export function ModeSession({ mode }: { mode: TrainingMode }) {
   const navigate = useNavigate();
   const getTopic = useServerFn(generateExtemporeTopic);
@@ -46,6 +61,29 @@ export function ModeSession({ mode }: { mode: TrainingMode }) {
 
   const isPanel = mode.kind === "panel";
   const isExtempore = mode.id === "extempore";
+  const supportsThinking = THINKING_MODES.has(mode.id);
+  const [thinkingOn, setThinkingOn] = useState(false);
+
+  useEffect(() => {
+    if (!supportsThinking) return;
+    try {
+      setThinkingOn(window.localStorage.getItem(THINKING_VIEW_KEY) === "on");
+    } catch {
+      // storage unavailable — the toggle just starts off
+    }
+  }, [supportsThinking]);
+
+  function toggleThinking() {
+    setThinkingOn((on) => {
+      const next = !on;
+      try {
+        window.localStorage.setItem(THINKING_VIEW_KEY, next ? "on" : "off");
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }
 
   const transport = useMemo(
     () =>
@@ -65,6 +103,33 @@ export function ModeSession({ mode }: { mode: TrainingMode }) {
   const busy = status === "submitted" || status === "streaming";
   const visible = messages.filter((m) => messageText(m) !== OPENING_TRIGGER);
   const thinking = busy && !(status === "streaming" && visible.at(-1)?.role === "assistant");
+
+  // One pair per completed assistant turn, with the user turn it answered.
+  const pairs: ThinkingPair[] = useMemo(() => {
+    if (!supportsThinking || !thinkingOn) return [];
+    const out: ThinkingPair[] = [];
+    visible.forEach((message, index) => {
+      if (message.role !== "assistant") return;
+      const isLast = index === visible.length - 1;
+      if (isLast && busy) return; // still streaming
+      const aiTurn = messageText(message);
+      if (!aiTurn) return;
+      const priorUser = visible
+        .slice(0, index)
+        .reverse()
+        .find((m) => m.role === "user");
+      out.push({ id: message.id, userTurn: priorUser ? messageText(priorUser) : "", aiTurn });
+    });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supportsThinking, thinkingOn, messages, busy]);
+
+  const thinkingContext = {
+    modeId: mode.id,
+    modeName: mode.name,
+    topic,
+    ...(variant ? { variant } : {}),
+  };
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -133,6 +198,7 @@ export function ModeSession({ mode }: { mode: TrainingMode }) {
       modeName: mode.name,
       topic,
       ...(variant ? { variant } : {}),
+      profileId: loadSelectedProfileId(defaultProfileIdForMode(mode.id)),
       turns: visible.map((m) => ({
         speaker: m.role === "user" ? "You" : mode.name,
         role: m.role === "user" ? ("user" as const) : ("ai" as const),
