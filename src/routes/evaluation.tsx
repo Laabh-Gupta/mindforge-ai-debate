@@ -1,18 +1,41 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
-import { AlertTriangle, ArrowRight, CheckCircle2, Lightbulb, TrendingDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Lightbulb,
+  RotateCcw,
+  Sliders,
+  TrendingDown,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import { FloatingNav } from "@/components/mindforge/FloatingNav";
 import {
   DIMENSION_LABELS,
-  EVALUATION_DIMENSIONS,
   SESSION_KEY,
+  type EvaluationProfile,
   type SessionEvaluation,
   type StoredSession,
+  type WeightedDimensionKey,
 } from "@/lib/evaluation-shared";
+import {
+  BALANCED_PROFILE,
+  CUSTOM_PROFILE_ID,
+  PRESET_PROFILES,
+  applyProfile,
+  defaultProfileIdForMode,
+  getProfile,
+  loadCustomProfile,
+  loadSelectedProfileId,
+  makeCustomProfile,
+  saveCustomProfile,
+  saveSelectedProfileId,
+} from "@/lib/evaluation-profiles";
 import { evaluateSession } from "@/lib/session.functions";
 import { saveRecord } from "@/lib/skills-store";
 
@@ -71,6 +94,33 @@ function EvaluationPage() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [evaluation, setEvaluation] = useState<SessionEvaluation | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileId, setProfileId] = useState<string>(BALANCED_PROFILE.id);
+  const [custom, setCustom] = useState<EvaluationProfile>(() =>
+    makeCustomProfile(BALANCED_PROFILE.weights),
+  );
+  const [editingWeights, setEditingWeights] = useState(false);
+
+  const profile = getProfile(profileId, custom);
+  const result = useMemo(
+    () => applyProfile(evaluation?.scores, profile),
+    [evaluation, profile],
+  );
+
+  function selectProfile(id: string) {
+    setProfileId(id);
+    saveSelectedProfileId(id);
+    if (id === CUSTOM_PROFILE_ID) setEditingWeights(true);
+  }
+
+  function setWeight(key: WeightedDimensionKey, value: number) {
+    const next = makeCustomProfile({ ...custom.weights, [key]: value });
+    setCustom(next);
+    saveCustomProfile(next);
+    if (profileId !== CUSTOM_PROFILE_ID) {
+      setProfileId(CUSTOM_PROFILE_ID);
+      saveSelectedProfileId(CUSTOM_PROFILE_ID);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +132,10 @@ function EvaluationPage() {
       stored = null;
     }
     setSession(stored);
+    setCustom(loadCustomProfile());
+    setProfileId(
+      stored?.profileId ?? loadSelectedProfileId(defaultProfileIdForMode(stored?.modeId)),
+    );
     if (!stored) {
       setLoading(false);
       return;
@@ -141,29 +195,141 @@ function EvaluationPage() {
       <main className="mx-auto max-w-6xl px-5 pt-10">
         <section className="glass animate-rise rounded-3xl p-6 text-center sm:p-10">
           <p className="text-xs tracking-widest text-muted-foreground uppercase">
-            {session?.modeName ?? "Session"} · Overall performance
+            {session?.modeName ?? "Session"} · {profile.name} score
           </p>
           <p className="mt-2 font-display text-6xl font-bold text-gradient">
-            {loading ? "…" : (evaluation?.scores.overallPerformance ?? "—")}
+            {loading ? "…" : evaluation ? result.overall : "—"}
           </p>
+          {!loading && evaluation && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Holistic read: {evaluation.scores.overallPerformance} · reweighted instantly, no
+              re-run
+            </p>
+          )}
           <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
             {loading
               ? "Reviewing your transcript..."
               : (evaluation?.summary ??
                 "The evaluation could not be generated for this session. Please try again.")}
           </p>
+          {!loading && evaluation && result.strongest && result.weakest && (
+            <p className="mx-auto mt-4 max-w-xl text-sm">
+              Under this profile your biggest lift is{" "}
+              <span className="font-medium text-success">
+                {DIMENSION_LABELS[result.strongest]}
+              </span>{" "}
+              and your biggest drag is{" "}
+              <span className="font-medium text-warning">{DIMENSION_LABELS[result.weakest]}</span>.
+            </p>
+          )}
+        </section>
+
+        <section className="glass mt-6 rounded-3xl p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold">Evaluation profile</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{profile.description}</p>
+            </div>
+            <Button variant="outline" onClick={() => setEditingWeights((v) => !v)}>
+              <Sliders className="mr-1 h-4 w-4" />
+              {editingWeights ? "Hide weights" : "Customise weights"}
+            </Button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {[...PRESET_PROFILES, custom].map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => selectProfile(p.id)}
+                className={`rounded-full px-4 py-2 text-sm transition-colors ${
+                  profileId === p.id
+                    ? "bg-gradient-brand text-primary-foreground"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+
+          {editingWeights && (
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              {result.ranked.map((row) => (
+                <div key={row.key}>
+                  <div className="flex items-baseline justify-between gap-3 text-sm">
+                    <span>{row.label}</span>
+                    <span className="text-muted-foreground">
+                      weight {custom.id === profile.id ? custom.weights[row.key] : row.weight}
+                    </span>
+                  </div>
+                  <Slider
+                    className="mt-2"
+                    min={0}
+                    max={10}
+                    step={1}
+                    value={[profile.weights[row.key]]}
+                    onValueChange={([value]) => setWeight(row.key, value ?? 0)}
+                  />
+                </div>
+              ))}
+              <div className="sm:col-span-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    const reset = makeCustomProfile(BALANCED_PROFILE.weights);
+                    setCustom(reset);
+                    saveCustomProfile(reset);
+                    selectProfile(CUSTOM_PROFILE_ID);
+                  }}
+                >
+                  <RotateCcw className="mr-1 h-4 w-4" /> Reset custom weights
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {evaluation && (
+            <div className="mt-6">
+              <p className="text-xs tracking-widest text-muted-foreground uppercase">
+                Same session, other profiles
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                {PRESET_PROFILES.filter((p) => p.id !== profileId)
+                  .slice(0, 3)
+                  .map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => selectProfile(p.id)}
+                      className="rounded-2xl bg-secondary/60 px-4 py-3 text-left"
+                    >
+                      <span className="text-sm text-muted-foreground">{p.name}</span>
+                      <p className="font-display text-2xl font-bold">
+                        {applyProfile(evaluation.scores, p).overall}
+                      </p>
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {EVALUATION_DIMENSIONS.map((key) => (
-            <div key={key} className="glass rounded-2xl p-5">
+          {result.ranked.map((row) => (
+            <div key={row.key} className="glass rounded-2xl p-5">
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-sm text-muted-foreground">{DIMENSION_LABELS[key]}</span>
+                <span className="text-sm text-muted-foreground">{row.label}</span>
                 <span className="font-display text-xl font-bold">
-                  {loading ? "…" : (evaluation?.scores[key] ?? 0)}
+                  {loading ? "…" : row.score}
                 </span>
               </div>
-              <Progress value={evaluation?.scores[key] ?? 0} className="mt-3 h-2" />
+              <Progress value={row.score} className="mt-3 h-2" />
+              <p className="mt-2 text-xs text-muted-foreground">
+                {row.weight === 0
+                  ? "Not counted in this profile"
+                  : `${Math.round(row.share * 100)}% of this profile's score`}
+              </p>
             </div>
           ))}
         </section>

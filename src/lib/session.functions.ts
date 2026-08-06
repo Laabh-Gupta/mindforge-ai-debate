@@ -1,12 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import type { SessionEvaluation } from "./evaluation-shared";
+import type { SessionEvaluation, ThinkingSteps } from "./evaluation-shared";
 import {
   EvaluationSchema,
   ObserverSchema,
+  ThinkingStepsSchema,
   buildEvaluationPrompt,
   buildObserverPrompt,
+  buildThinkingPrompt,
   normalizeEvaluation,
   runStructured,
   runText,
@@ -77,4 +79,34 @@ export const generateObserverDiscussion = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) return null;
     return runStructured(key, ObserverSchema, buildObserverPrompt(data.topic));
+  });
+
+const ExplainInput = z.object({
+  modeId: z.string(),
+  modeName: z.string(),
+  topic: z.string(),
+  variant: z.string().optional(),
+  userTurn: z.string(),
+  aiTurn: z.string(),
+});
+
+/** Educational breakdown of one AI turn for the Thinking View. */
+export const explainTurn = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => ExplainInput.parse(input))
+  .handler(async ({ data }): Promise<ThinkingSteps | null> => {
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) return null;
+    if (!data.aiTurn.trim()) return null;
+    return runStructured(
+      key,
+      ThinkingStepsSchema,
+      buildThinkingPrompt({
+        modeId: data.modeId,
+        modeName: data.modeName,
+        topic: data.topic,
+        variant: data.variant,
+        userTurn: data.userTurn,
+        aiTurn: data.aiTurn,
+      }),
+    );
   });

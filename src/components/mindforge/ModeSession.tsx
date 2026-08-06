@@ -2,7 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Flag, Play, SendHorizontal, Sparkle, Mic, Timer as TimerIcon } from "lucide-react";
+import { Brain, Flag, Play, SendHorizontal, Sparkle, Mic, Timer as TimerIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -10,7 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SpeakerBubble, parseSpeakerTurns } from "@/components/mindforge/SpeakerTurn";
-import { SESSION_KEY, type StoredSession } from "@/lib/evaluation-shared";
+import {
+  ThinkingCard,
+  ThinkingPanel,
+  type ThinkingPair,
+} from "@/components/mindforge/ThinkingView";
+import { SESSION_KEY, THINKING_VIEW_KEY, type StoredSession } from "@/lib/evaluation-shared";
+import { defaultProfileIdForMode, loadSelectedProfileId } from "@/lib/evaluation-profiles";
 import { OPENING_TRIGGER } from "@/lib/session-prompt";
 import { generateExtemporeTopic } from "@/lib/session.functions";
 import type { TrainingMode } from "@/lib/training-modes";
@@ -30,6 +36,15 @@ function formatClock(seconds: number) {
 
 type Phase = "setup" | "prep" | "live";
 
+/** Modes with a real back-and-forth exchange to explain. */
+const THINKING_MODES = new Set([
+  "debate",
+  "group-discussion",
+  "case-discussion",
+  "interview",
+  "negotiation",
+]);
+
 export function ModeSession({ mode }: { mode: TrainingMode }) {
   const navigate = useNavigate();
   const getTopic = useServerFn(generateExtemporeTopic);
@@ -46,6 +61,29 @@ export function ModeSession({ mode }: { mode: TrainingMode }) {
 
   const isPanel = mode.kind === "panel";
   const isExtempore = mode.id === "extempore";
+  const supportsThinking = THINKING_MODES.has(mode.id);
+  const [thinkingOn, setThinkingOn] = useState(false);
+
+  useEffect(() => {
+    if (!supportsThinking) return;
+    try {
+      setThinkingOn(window.localStorage.getItem(THINKING_VIEW_KEY) === "on");
+    } catch {
+      // storage unavailable — the toggle just starts off
+    }
+  }, [supportsThinking]);
+
+  function toggleThinking() {
+    setThinkingOn((on) => {
+      const next = !on;
+      try {
+        window.localStorage.setItem(THINKING_VIEW_KEY, next ? "on" : "off");
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }
 
   const transport = useMemo(
     () =>
@@ -65,6 +103,33 @@ export function ModeSession({ mode }: { mode: TrainingMode }) {
   const busy = status === "submitted" || status === "streaming";
   const visible = messages.filter((m) => messageText(m) !== OPENING_TRIGGER);
   const thinking = busy && !(status === "streaming" && visible.at(-1)?.role === "assistant");
+
+  // One pair per completed assistant turn, with the user turn it answered.
+  const pairs: ThinkingPair[] = useMemo(() => {
+    if (!supportsThinking || !thinkingOn) return [];
+    const out: ThinkingPair[] = [];
+    visible.forEach((message, index) => {
+      if (message.role !== "assistant") return;
+      const isLast = index === visible.length - 1;
+      if (isLast && busy) return; // still streaming
+      const aiTurn = messageText(message);
+      if (!aiTurn) return;
+      const priorUser = visible
+        .slice(0, index)
+        .reverse()
+        .find((m) => m.role === "user");
+      out.push({ id: message.id, userTurn: priorUser ? messageText(priorUser) : "", aiTurn });
+    });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supportsThinking, thinkingOn, messages, busy]);
+
+  const thinkingContext = {
+    modeId: mode.id,
+    modeName: mode.name,
+    topic,
+    ...(variant ? { variant } : {}),
+  };
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -133,6 +198,7 @@ export function ModeSession({ mode }: { mode: TrainingMode }) {
       modeName: mode.name,
       topic,
       ...(variant ? { variant } : {}),
+      profileId: loadSelectedProfileId(defaultProfileIdForMode(mode.id)),
       turns: visible.map((m) => ({
         speaker: m.role === "user" ? "You" : mode.name,
         role: m.role === "user" ? ("user" as const) : ("ai" as const),
@@ -244,14 +310,28 @@ export function ModeSession({ mode }: { mode: TrainingMode }) {
 
   return (
     <section className="animate-rise">
-      <div className="glass grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl px-5 py-4">
-        <div className="min-w-0">
+      <div className="glass flex flex-wrap items-center gap-3 rounded-2xl px-5 py-4">
+        <div className="min-w-0 flex-1">
           <p className="text-xs tracking-widest text-muted-foreground uppercase">
             {mode.name}
             {variant ? ` · ${variant}` : ""}
           </p>
           <h1 className="truncate text-base font-semibold">{topic}</h1>
         </div>
+        {supportsThinking && (
+          <button
+            type="button"
+            onClick={toggleThinking}
+            aria-pressed={thinkingOn}
+            className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors ${
+              thinkingOn
+                ? "bg-gradient-brand text-primary-foreground"
+                : "bg-secondary text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Brain className="h-3.5 w-3.5" /> Thinking View
+          </button>
+        )}
         {isExtempore ? (
           <span className="flex shrink-0 items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs">
             <TimerIcon className="h-3.5 w-3.5 text-primary" /> {formatClock(seconds)}
@@ -263,7 +343,12 @@ export function ModeSession({ mode }: { mode: TrainingMode }) {
         )}
       </div>
 
-      <div className="mt-5 space-y-5">
+      <div
+        className={
+          thinkingOn ? "mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]" : "mt-5"
+        }
+      >
+      <div className="space-y-5">
         {visible.map((m) =>
           m.role === "user" ? (
             <div key={m.id} className="flex justify-end">
@@ -280,6 +365,17 @@ export function ModeSession({ mode }: { mode: TrainingMode }) {
               ) : (
                 <SpeakerBubble speaker={mode.name} content={messageText(m)} />
               )}
+              {thinkingOn &&
+                pairs.some((p) => p.id === m.id) &&
+                (() => {
+                  const index = pairs.findIndex((p) => p.id === m.id);
+                  const pair = pairs[index]!;
+                  return (
+                    <div className="lg:hidden">
+                      <ThinkingCard pair={pair} context={thinkingContext} index={index} />
+                    </div>
+                  );
+                })()}
             </div>
           ),
         )}
@@ -304,6 +400,12 @@ export function ModeSession({ mode }: { mode: TrainingMode }) {
           </p>
         )}
         <div ref={endRef} />
+      </div>
+        {thinkingOn && (
+          <div className="hidden lg:block">
+            <ThinkingPanel pairs={pairs} context={thinkingContext} />
+          </div>
+        )}
       </div>
 
       <form onSubmit={send} className="glass sticky bottom-4 mt-6 rounded-2xl p-4">
