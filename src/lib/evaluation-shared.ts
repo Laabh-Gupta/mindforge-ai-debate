@@ -55,7 +55,29 @@ export type StoredSession = {
   turns: { speaker: string; role: "user" | "ai"; content: string }[];
   /** Observer mode carries the user's written analysis answers instead of turns. */
   observerAnswers?: { question: string; answer: string }[];
+  /** Evaluation profile the session was finished with. */
+  profileId?: string;
+};
+
+/** A named set of weights over the 15 dimensions. Weights are relative, 0-10. */
+export type EvaluationProfile = {
+  id: string;
+  name: string;
+  description: string;
+  weights: Record<DimensionKey, number>;
+};
+
+/** One educational breakdown of a single AI turn, shown in the Thinking View. */
+export type ThinkingSteps = {
+  heard: string;
+  move: string;
+  moveWhy: string;
+  principle: string;
+  nextMove: string;
 };
 
 export const SESSION_KEY = "mindforge:last-session";
 export const SKILLS_KEY = "mindforge:skills";
+export const PROFILE_KEY = "mindforge:evaluation-profile";
+export const CUSTOM_PROFILE_KEY = "mindforge:custom-profile";
+export const THINKING_VIEW_KEY = "mindforge:thinking-view";
