@@ -1,18 +1,41 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
-import { AlertTriangle, ArrowRight, CheckCircle2, Lightbulb, TrendingDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Lightbulb,
+  RotateCcw,
+  Sliders,
+  TrendingDown,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import { FloatingNav } from "@/components/mindforge/FloatingNav";
 import {
   DIMENSION_LABELS,
-  EVALUATION_DIMENSIONS,
   SESSION_KEY,
+  type EvaluationProfile,
   type SessionEvaluation,
   type StoredSession,
+  type WeightedDimensionKey,
 } from "@/lib/evaluation-shared";
+import {
+  BALANCED_PROFILE,
+  CUSTOM_PROFILE_ID,
+  PRESET_PROFILES,
+  applyProfile,
+  defaultProfileIdForMode,
+  getProfile,
+  loadCustomProfile,
+  loadSelectedProfileId,
+  makeCustomProfile,
+  saveCustomProfile,
+  saveSelectedProfileId,
+} from "@/lib/evaluation-profiles";
 import { evaluateSession } from "@/lib/session.functions";
 import { saveRecord } from "@/lib/skills-store";
 
