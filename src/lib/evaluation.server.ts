@@ -28,6 +28,59 @@ export const ObserverSchema = z.object({
   questions: z.array(z.string()),
 });
 
+export const ThinkingStepsSchema = z.object({
+  heard: z.string(),
+  move: z.string(),
+  moveWhy: z.string(),
+  principle: z.string(),
+  nextMove: z.string(),
+});
+
+const THINKING_LENS: Record<string, string> = {
+  debate:
+    "Use debate vocabulary: objections, counterexamples, burden of proof, concessions, named fallacies.",
+  "group-discussion":
+    "Use group-discussion vocabulary: entering the floor, building on a point, structuring the discussion, bringing in a quieter voice, steering back to relevance.",
+  "case-discussion":
+    "Use case vocabulary: framing, structuring, isolating the driver, testing assumptions against constraints, committing to a recommendation.",
+  interview:
+    "Use interview vocabulary: the competency being probed, follow-up pressure, specificity of evidence, structured answers such as situation-action-result.",
+  negotiation:
+    "Use negotiation vocabulary: anchoring, counter-anchor, trading variables, testing the walk-away point, signalling flexibility without conceding.",
+};
+
+export function buildThinkingPrompt(input: {
+  modeId: string;
+  modeName: string;
+  topic: string;
+  variant?: string | undefined;
+  userTurn: string;
+  aiTurn: string;
+}) {
+  const lens = THINKING_LENS[input.modeId] ?? THINKING_LENS["debate"];
+  return `You are a coach explaining, to a learner, the reasoning behind one turn in a "${input.modeName}" session${
+    input.variant ? ` (${input.variant})` : ""
+  } on: "${input.topic}".
+
+WHAT THE LEARNER SAID:
+${input.userTurn || "(the session had just opened — the learner had not spoken yet)"}
+
+HOW THE OTHER SIDE REPLIED:
+${input.aiTurn}
+
+Explain this exchange educationally. ${lens}
+Never mention prompts, instructions, models or system rules — talk only about reasoning and communication technique.
+
+Return:
+- heard: one sentence restating the learner's claim or position as the reply understood it. If the learner had not spoken yet, describe the opening frame instead.
+- move: the name of the technique used in the reply, three to six words (e.g. "Counterexample from the same source", "Anchoring high before trading").
+- moveWhy: one sentence on why that move fits this specific exchange.
+- principle: one plain-language sentence on the reasoning or communication principle behind the move, so the learner can reuse it.
+- nextMove: one concrete sentence telling the learner how to respond well, referring to the actual subject matter.
+
+Stay entirely inside this subject. Never invent statistics, studies or facts that were not discussed.`;
+}
+
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(Number.isFinite(n) ? n : 0)));
 
 export function normalizeEvaluation(raw: SessionEvaluation): SessionEvaluation {
