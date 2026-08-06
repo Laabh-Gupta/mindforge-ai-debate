@@ -59,12 +59,19 @@ export type StoredSession = {
   profileId?: string;
 };
 
+/** Dimensions that carry weight in a profile. The holistic score is derived, not weighted. */
+export const WEIGHTED_DIMENSIONS = EVALUATION_DIMENSIONS.filter(
+  (key) => key !== "overallPerformance",
+) as Exclude<DimensionKey, "overallPerformance">[];
+
+export type WeightedDimensionKey = (typeof WEIGHTED_DIMENSIONS)[number];
+
 /** A named set of weights over the 15 dimensions. Weights are relative, 0-10. */
 export type EvaluationProfile = {
   id: string;
   name: string;
   description: string;
-  weights: Record<DimensionKey, number>;
+  weights: Record<WeightedDimensionKey, number>;
 };
 
 /** One educational breakdown of a single AI turn, shown in the Thinking View. */
