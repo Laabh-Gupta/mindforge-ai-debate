@@ -1,8 +1,10 @@
 import {
   DIMENSION_LABELS,
   SKILLS_KEY,
+  type EvaluationProfile,
   type SessionEvaluation,
 } from "./evaluation-shared";
+import { applyProfile } from "./evaluation-profiles";
 
 export type SkillRecord = {
   modeId: string;
@@ -50,20 +52,26 @@ export function saveRecord(record: SkillRecord) {
 const avg = (values: number[]) =>
   values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
 
-/** Aggregate the ten dashboard meters from stored session history. */
-export function computeSkillProfile(history: SkillRecord[]) {
+/**
+ * Aggregate the ten dashboard meters from stored session history.
+ * Passing a profile reweights Communication IQ with the same engine the
+ * evaluation page uses, so long-term meters match the selected profile.
+ */
+export function computeSkillProfile(history: SkillRecord[], profile?: EvaluationProfile) {
   const pick = (key: keyof SkillRecord["scores"], modeIds?: string[]) => {
     const pool = modeIds ? history.filter((h) => modeIds.includes(h.modeId)) : history;
     return avg(pool.map((h) => h.scores[key]));
   };
 
   return {
-    communicationIQ: avg([
-      pick("communication"),
-      pick("clarity"),
-      pick("criticalThinking"),
-      pick("persuasion"),
-    ]),
+    communicationIQ: profile
+      ? avg(history.map((h) => applyProfile(h.scores, profile).overall))
+      : avg([
+          pick("communication"),
+          pick("clarity"),
+          pick("criticalThinking"),
+          pick("persuasion"),
+        ]),
     criticalThinking: pick("criticalThinking"),
     leadership: pick("leadership"),
     persuasion: pick("persuasion"),
