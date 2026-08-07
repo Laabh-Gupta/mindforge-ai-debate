@@ -47,6 +47,8 @@ const THINKING_LENS: Record<string, string> = {
     "Use interview vocabulary: the competency being probed, follow-up pressure, specificity of evidence, structured answers such as situation-action-result.",
   negotiation:
     "Use negotiation vocabulary: anchoring, counter-anchor, trading variables, testing the walk-away point, signalling flexibility without conceding.",
+  "real-world-simulation":
+    "Use simulation vocabulary: stakeholder pressure, role fidelity, reading the room, domain-appropriate objections, coalition-building, and maintaining character.",
 };
 
 export function buildThinkingPrompt(input: {
