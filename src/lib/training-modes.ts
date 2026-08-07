@@ -6,6 +6,7 @@ import {
   Timer,
   FileSearch,
   Handshake,
+  Drama,
   Eye,
   type LucideIcon,
 } from "lucide-react";
@@ -17,7 +18,8 @@ export type ModeId =
   | "public-speaking"
   | "extempore"
   | "case-discussion"
-  | "negotiation";
+  | "negotiation"
+  | "real-world-simulation";
 
 /** How the session UI behaves for a mode. */
 export type ModeKind = "duel" | "panel" | "interview" | "speech";
