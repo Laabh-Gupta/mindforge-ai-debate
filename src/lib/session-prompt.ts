@@ -126,6 +126,14 @@ Scenario: "${topic}". Your stance is ${variant ?? "Tough"}.
 You are the counterpart, not a coach. You have private interests, a budget or walk-away point and real constraints — hold them consistently for the whole negotiation. Anchor, resist, ask what you get in return, and only move when the user gives you a reason or a trade. Concede realistically if they negotiate well; hold firm if they do not. Never break character, never evaluate them mid-session.
 Reply in 1-3 short spoken paragraphs.`;
 
+    case "real-world-simulation":
+      return `${CORE}${CLARIFY}
+
+=== MODE: REAL-WORLD SIMULATION ===
+This is a ${variant ?? "high-stakes panel"} simulation on: "${topic}".
+You play a panel of stakeholders with real power and conflicting interests — investors, diplomats, board members, union leaders, journalists or regulators. Each voice must stay in character: an investor cares about returns and risks, a diplomat cares about precedent and coalition, a regulator cares about public trust and rules.
+Use the participants below, picking voices that fit the simulation type. Address each other by name, challenge the user with domain-appropriate pressure, and never break the fiction.${PANEL_FORMAT}`;
+
     case "public-speaking":
       return `${CORE}${CLARIFY}
 
@@ -161,6 +169,8 @@ export function buildOpeningPrompt(modeId: string, topic: string, variant?: stri
       return `Begin the ${variant ?? "HR"} interview with a candidate whose background is "${topic}". Greet them in one line, then ask your first question — specific to that background, never a generic "tell me about yourself" unless it is genuinely the right opener for this panel.`;
     case "negotiation":
       return `Open the negotiation for the scenario "${topic}". In character as the counterpart, set the scene in two sentences, state your opening position or anchor, and put the ball in the user's court.`;
+    case "real-world-simulation":
+      return `Open the ${variant ?? "real-world"} simulation on "${topic}". The Moderator or senior stakeholder frames the situation in two sentences, then two or three other voices stake out conflicting positions. End by putting the user on the spot with a direct question.`;
     case "public-speaking":
       return `Set the brief for a speech on "${topic}" and invite the user to deliver it in full.`;
     case "extempore":

@@ -6,6 +6,7 @@ import {
   Timer,
   FileSearch,
   Handshake,
+  Drama,
   Eye,
   type LucideIcon,
 } from "lucide-react";
@@ -17,7 +18,8 @@ export type ModeId =
   | "public-speaking"
   | "extempore"
   | "case-discussion"
-  | "negotiation";
+  | "negotiation"
+  | "real-world-simulation";
 
 /** How the session UI behaves for a mode. */
 export type ModeKind = "duel" | "panel" | "interview" | "speech";
@@ -178,6 +180,33 @@ export const trainingModes: TrainingMode[] = [
     variantLabel: "Counterpart stance",
     variants: ["Tough", "Fair", "Evasive", "Aggressive"],
     ctaLabel: "Begin negotiation",
+  },
+  {
+    id: "real-world-simulation",
+    kind: "panel",
+    name: "Real-World Simulation",
+    tagline: "Shark Tank, UN Summit, boardroom crises",
+    description:
+      "Step into high-stakes rooms where real stakeholders push back. Pitch, negotiate, deliberate or defend under pressure.",
+    icon: Drama,
+    setupLabel: "Scenario",
+    placeholder: "e.g. Shark Tank pitch for a sustainable packaging startup",
+    presets: [
+      "Shark Tank pitch for a sustainable packaging startup",
+      "UN Security Council debate on climate refugees",
+      "Boardroom crisis after a product recall",
+      "Union negotiation at a manufacturing plant",
+    ],
+    variantLabel: "Simulation type",
+    variants: [
+      "Shark Tank",
+      "UN Summit",
+      "Boardroom Crisis",
+      "Union Negotiation",
+      "Press Conference",
+      "Crisis PR",
+    ],
+    ctaLabel: "Enter simulation",
   },
 ];
 
