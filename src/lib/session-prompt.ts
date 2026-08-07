@@ -169,6 +169,8 @@ export function buildOpeningPrompt(modeId: string, topic: string, variant?: stri
       return `Begin the ${variant ?? "HR"} interview with a candidate whose background is "${topic}". Greet them in one line, then ask your first question — specific to that background, never a generic "tell me about yourself" unless it is genuinely the right opener for this panel.`;
     case "negotiation":
       return `Open the negotiation for the scenario "${topic}". In character as the counterpart, set the scene in two sentences, state your opening position or anchor, and put the ball in the user's court.`;
+    case "real-world-simulation":
+      return `Open the ${variant ?? "real-world"} simulation on "${topic}". The Moderator or senior stakeholder frames the situation in two sentences, then two or three other voices stake out conflicting positions. End by putting the user on the spot with a direct question.`;
     case "public-speaking":
       return `Set the brief for a speech on "${topic}" and invite the user to deliver it in full.`;
     case "extempore":
