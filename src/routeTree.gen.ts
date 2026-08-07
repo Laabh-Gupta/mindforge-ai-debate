@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DebateRouteImport } from './routes/debate'
 import { Route as EvaluationRouteImport } from './routes/evaluation'
+import { Route as GroupDiscussionRouteImport } from './routes/group-discussion'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ObserverRouteImport } from './routes/observer'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -41,6 +42,11 @@ const DebateRoute = DebateRouteImport.update({
 const EvaluationRoute = EvaluationRouteImport.update({
   id: '/evaluation',
   path: '/evaluation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupDiscussionRoute = GroupDiscussionRouteImport.update({
+  id: '/group-discussion',
+  path: '/group-discussion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
   '/evaluation': typeof EvaluationRoute
+  '/group-discussion': typeof GroupDiscussionRoute
   '/login': typeof LoginRoute
   '/observer': typeof ObserverRoute
   '/profile': typeof ProfileRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
   '/evaluation': typeof EvaluationRoute
+  '/group-discussion': typeof GroupDiscussionRoute
   '/login': typeof LoginRoute
   '/observer': typeof ObserverRoute
   '/profile': typeof ProfileRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
   '/evaluation': typeof EvaluationRoute
+  '/group-discussion': typeof GroupDiscussionRoute
   '/login': typeof LoginRoute
   '/observer': typeof ObserverRoute
   '/profile': typeof ProfileRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/debate'
     | '/evaluation'
+    | '/group-discussion'
     | '/login'
     | '/observer'
     | '/profile'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/debate'
     | '/evaluation'
+    | '/group-discussion'
     | '/login'
     | '/observer'
     | '/profile'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/debate'
     | '/evaluation'
+    | '/group-discussion'
     | '/login'
     | '/observer'
     | '/profile'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DebateRoute: typeof DebateRoute
   EvaluationRoute: typeof EvaluationRoute
+  GroupDiscussionRoute: typeof GroupDiscussionRoute
   LoginRoute: typeof LoginRoute
   ObserverRoute: typeof ObserverRoute
   ProfileRoute: typeof ProfileRoute
@@ -227,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/evaluation'
       fullPath: '/evaluation'
       preLoaderRoute: typeof EvaluationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/group-discussion': {
+      id: '/group-discussion'
+      path: '/group-discussion'
+      fullPath: '/group-discussion'
+      preLoaderRoute: typeof GroupDiscussionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -300,6 +320,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   DebateRoute: DebateRoute,
   EvaluationRoute: EvaluationRoute,
+  GroupDiscussionRoute: GroupDiscussionRoute,
   LoginRoute: LoginRoute,
   ObserverRoute: ObserverRoute,
   ProfileRoute: ProfileRoute,
@@ -313,3 +334,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
