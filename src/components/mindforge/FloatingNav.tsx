@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 const appLinks = [
   { to: "/dashboard", label: "Dashboard" },
-  { to: "/debate", label: "Debate" },
+  { to: "/train", label: "Training Hub" },
   { to: "/result", label: "Results" },
   { to: "/profile", label: "Profile" },
 ] as const;
