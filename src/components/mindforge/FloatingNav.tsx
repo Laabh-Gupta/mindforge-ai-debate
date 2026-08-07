@@ -75,11 +75,11 @@ export function FloatingNav({ variant = "app" }: { variant?: "app" | "marketing"
               </Link>
             ))}
             <Link
-              to={variant === "marketing" ? "/signup" : "/debate"}
+              to={variant === "marketing" ? "/signup" : "/train"}
               onClick={() => setOpen(false)}
               className="mt-1 rounded-lg bg-gradient-brand px-3 py-2 text-center text-sm font-medium text-primary-foreground"
             >
-              {variant === "marketing" ? "Get started" : "New debate"}
+              {variant === "marketing" ? "Get started" : "Training Hub"}
             </Link>
           </div>
         )}
