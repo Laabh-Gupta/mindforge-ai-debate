@@ -3,7 +3,7 @@ import { Award, Settings, Zap, Flame } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { FloatingNav } from "@/components/mindforge/FloatingNav";
+import { AppShellRaw } from "@/components/mindforge/AppShell";
 import { achievements, badges, profileUser, recentDebates } from "@/lib/mindforge-data";
 
 const title = "Your Profile — MindForge";
@@ -26,8 +26,7 @@ function ProfilePage() {
   const xpPct = Math.round((profileUser.xp / profileUser.nextRankXp) * 100);
 
   return (
-    <div className="min-h-screen pb-20">
-      <FloatingNav />
+    <AppShellRaw>
 
       <main className="mx-auto max-w-6xl px-5 pt-10">
         <section className="glass rounded-3xl p-6 sm:p-8">
@@ -129,6 +128,6 @@ function ProfilePage() {
           </div>
         </section>
       </main>
-    </div>
+    </AppShellRaw>
   );
 }
