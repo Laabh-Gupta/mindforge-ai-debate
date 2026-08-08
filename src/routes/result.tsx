@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Lightbulb, TrendingDown, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { FloatingNav } from "@/components/mindforge/FloatingNav";
+import { AppShellRaw } from "@/components/mindforge/AppShell";
 import { ScoreRing } from "@/components/mindforge/ScoreRing";
 import { resultInsights, scoreBreakdown } from "@/lib/mindforge-data";
 import { analyzeDebate, type DebateAnalysis } from "@/lib/debate-score.functions";
@@ -106,8 +106,7 @@ function ResultPage() {
   const insights = analysis ?? resultInsights;
 
   return (
-    <div className="min-h-screen pb-20">
-      <FloatingNav />
+    <AppShellRaw>
 
       <main className="mx-auto max-w-6xl px-5 pt-10">
         <section className="glass animate-rise rounded-3xl p-6 text-center sm:p-10">
@@ -180,6 +179,6 @@ function ResultPage() {
           </Button>
         </div>
       </main>
-    </div>
+    </AppShellRaw>
   );
 }

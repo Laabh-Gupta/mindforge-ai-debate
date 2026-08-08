@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FloatingNav } from "@/components/mindforge/FloatingNav";
+import { AppShellRaw } from "@/components/mindforge/AppShell";
 import { suggestedTopics } from "@/lib/mindforge-data";
 import { OPENING_TRIGGER } from "@/lib/debate-prompt";
 import { DEBATE_TRANSCRIPT_KEY, type StoredTranscript } from "@/services/ai-debate";
@@ -112,8 +112,7 @@ function DebateRoom() {
   }
 
   return (
-    <div className="min-h-screen pb-10">
-      <FloatingNav />
+    <AppShellRaw>
 
       <main className="mx-auto max-w-4xl px-5 pt-8">
         {!started ? (
@@ -267,6 +266,6 @@ function DebateRoom() {
           </section>
         )}
       </main>
-    </div>
+    </AppShellRaw>
   );
 }

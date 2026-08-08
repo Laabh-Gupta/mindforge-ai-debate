@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FloatingNav } from "@/components/mindforge/FloatingNav";
+import { AppShellRaw } from "@/components/mindforge/AppShell";
 import { SpeakerBubble } from "@/components/mindforge/SpeakerTurn";
 import { SESSION_KEY, type StoredSession } from "@/lib/evaluation-shared";
 import { generateObserverDiscussion } from "@/lib/session.functions";
@@ -84,8 +84,7 @@ function ObserverPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <FloatingNav />
+    <AppShellRaw>
       <main className="mx-auto max-w-4xl px-5 pt-10">
         {!discussion ? (
           <section className="animate-rise">
@@ -182,6 +181,6 @@ function ObserverPage() {
           </section>
         )}
       </main>
-    </div>
+    </AppShellRaw>
   );
 }
