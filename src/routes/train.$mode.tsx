@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 
-import { FloatingNav } from "@/components/mindforge/FloatingNav";
+import { AppShellRaw } from "@/components/mindforge/AppShell";
 import { ModeSession } from "@/components/mindforge/ModeSession";
 import { getMode } from "@/lib/training-modes";
 
@@ -29,8 +29,7 @@ function ModePage() {
   const mode = getMode(modeId);
 
   return (
-    <div className="min-h-screen pb-10">
-      <FloatingNav />
+    <AppShellRaw>
       <main className="mx-auto max-w-4xl px-5 pt-8">
         {mode ? (
           <ModeSession key={mode.id} mode={mode} />
@@ -43,6 +42,6 @@ function ModePage() {
           </div>
         )}
       </main>
-    </div>
+    </AppShellRaw>
   );
 }

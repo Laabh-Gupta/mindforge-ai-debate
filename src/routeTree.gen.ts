@@ -10,15 +10,27 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AchievementsRouteImport } from './routes/achievements'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as CaseDiscussionRouteImport } from './routes/case-discussion'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DebateRouteImport } from './routes/debate'
 import { Route as EvaluationRouteImport } from './routes/evaluation'
+import { Route as ExtemporeRouteImport } from './routes/extempore'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as GroupDiscussionRouteImport } from './routes/group-discussion'
+import { Route as InterviewRouteImport } from './routes/interview'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as NegotiationRouteImport } from './routes/negotiation'
 import { Route as ObserverRouteImport } from './routes/observer'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PublicSpeakingRouteImport } from './routes/public-speaking'
 import { Route as ResultRouteImport } from './routes/result'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SimulationRouteImport } from './routes/simulation'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiSessionRouteImport } from './routes/api/session'
 import { Route as TrainIndexRouteImport } from './routes/train.index'
@@ -27,6 +39,21 @@ import { Route as TrainModeRouteImport } from './routes/train.$mode'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AchievementsRoute = AchievementsRouteImport.update({
+  id: '/achievements',
+  path: '/achievements',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CaseDiscussionRoute = CaseDiscussionRouteImport.update({
+  id: '/case-discussion',
+  path: '/case-discussion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -44,9 +71,29 @@ const EvaluationRoute = EvaluationRouteImport.update({
   path: '/evaluation',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExtemporeRoute = ExtemporeRouteImport.update({
+  id: '/extempore',
+  path: '/extempore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GroupDiscussionRoute = GroupDiscussionRouteImport.update({
   id: '/group-discussion',
   path: '/group-discussion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InterviewRoute = InterviewRouteImport.update({
+  id: '/interview',
+  path: '/interview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -54,9 +101,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NegotiationRoute = NegotiationRouteImport.update({
+  id: '/negotiation',
+  path: '/negotiation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObserverRoute = ObserverRouteImport.update({
   id: '/observer',
   path: '/observer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -64,14 +121,29 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PublicSpeakingRoute = PublicSpeakingRouteImport.update({
+  id: '/public-speaking',
+  path: '/public-speaking',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResultRoute = ResultRouteImport.update({
   id: '/result',
   path: '/result',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimulationRoute = SimulationRouteImport.update({
+  id: '/simulation',
+  path: '/simulation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -97,15 +169,27 @@ const TrainModeRoute = TrainModeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
+  '/analytics': typeof AnalyticsRoute
+  '/case-discussion': typeof CaseDiscussionRoute
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
   '/evaluation': typeof EvaluationRoute
+  '/extempore': typeof ExtemporeRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/group-discussion': typeof GroupDiscussionRoute
+  '/interview': typeof InterviewRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
+  '/negotiation': typeof NegotiationRoute
   '/observer': typeof ObserverRoute
+  '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
+  '/public-speaking': typeof PublicSpeakingRoute
   '/result': typeof ResultRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/simulation': typeof SimulationRoute
   '/api/chat': typeof ApiChatRoute
   '/api/session': typeof ApiSessionRoute
   '/train/$mode': typeof TrainModeRoute
@@ -113,15 +197,27 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
+  '/analytics': typeof AnalyticsRoute
+  '/case-discussion': typeof CaseDiscussionRoute
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
   '/evaluation': typeof EvaluationRoute
+  '/extempore': typeof ExtemporeRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/group-discussion': typeof GroupDiscussionRoute
+  '/interview': typeof InterviewRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
+  '/negotiation': typeof NegotiationRoute
   '/observer': typeof ObserverRoute
+  '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
+  '/public-speaking': typeof PublicSpeakingRoute
   '/result': typeof ResultRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/simulation': typeof SimulationRoute
   '/api/chat': typeof ApiChatRoute
   '/api/session': typeof ApiSessionRoute
   '/train/$mode': typeof TrainModeRoute
@@ -130,15 +226,27 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
+  '/analytics': typeof AnalyticsRoute
+  '/case-discussion': typeof CaseDiscussionRoute
   '/dashboard': typeof DashboardRoute
   '/debate': typeof DebateRoute
   '/evaluation': typeof EvaluationRoute
+  '/extempore': typeof ExtemporeRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/group-discussion': typeof GroupDiscussionRoute
+  '/interview': typeof InterviewRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
+  '/negotiation': typeof NegotiationRoute
   '/observer': typeof ObserverRoute
+  '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
+  '/public-speaking': typeof PublicSpeakingRoute
   '/result': typeof ResultRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/simulation': typeof SimulationRoute
   '/api/chat': typeof ApiChatRoute
   '/api/session': typeof ApiSessionRoute
   '/train/$mode': typeof TrainModeRoute
@@ -148,15 +256,27 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/achievements'
+    | '/analytics'
+    | '/case-discussion'
     | '/dashboard'
     | '/debate'
     | '/evaluation'
+    | '/extempore'
+    | '/forgot-password'
     | '/group-discussion'
+    | '/interview'
+    | '/leaderboard'
     | '/login'
+    | '/negotiation'
     | '/observer'
+    | '/pricing'
     | '/profile'
+    | '/public-speaking'
     | '/result'
+    | '/settings'
     | '/signup'
+    | '/simulation'
     | '/api/chat'
     | '/api/session'
     | '/train/$mode'
@@ -164,15 +284,27 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/achievements'
+    | '/analytics'
+    | '/case-discussion'
     | '/dashboard'
     | '/debate'
     | '/evaluation'
+    | '/extempore'
+    | '/forgot-password'
     | '/group-discussion'
+    | '/interview'
+    | '/leaderboard'
     | '/login'
+    | '/negotiation'
     | '/observer'
+    | '/pricing'
     | '/profile'
+    | '/public-speaking'
     | '/result'
+    | '/settings'
     | '/signup'
+    | '/simulation'
     | '/api/chat'
     | '/api/session'
     | '/train/$mode'
@@ -180,15 +312,27 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/achievements'
+    | '/analytics'
+    | '/case-discussion'
     | '/dashboard'
     | '/debate'
     | '/evaluation'
+    | '/extempore'
+    | '/forgot-password'
     | '/group-discussion'
+    | '/interview'
+    | '/leaderboard'
     | '/login'
+    | '/negotiation'
     | '/observer'
+    | '/pricing'
     | '/profile'
+    | '/public-speaking'
     | '/result'
+    | '/settings'
     | '/signup'
+    | '/simulation'
     | '/api/chat'
     | '/api/session'
     | '/train/$mode'
@@ -197,15 +341,27 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AchievementsRoute: typeof AchievementsRoute
+  AnalyticsRoute: typeof AnalyticsRoute
+  CaseDiscussionRoute: typeof CaseDiscussionRoute
   DashboardRoute: typeof DashboardRoute
   DebateRoute: typeof DebateRoute
   EvaluationRoute: typeof EvaluationRoute
+  ExtemporeRoute: typeof ExtemporeRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   GroupDiscussionRoute: typeof GroupDiscussionRoute
+  InterviewRoute: typeof InterviewRoute
+  LeaderboardRoute: typeof LeaderboardRoute
   LoginRoute: typeof LoginRoute
+  NegotiationRoute: typeof NegotiationRoute
   ObserverRoute: typeof ObserverRoute
+  PricingRoute: typeof PricingRoute
   ProfileRoute: typeof ProfileRoute
+  PublicSpeakingRoute: typeof PublicSpeakingRoute
   ResultRoute: typeof ResultRoute
+  SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
+  SimulationRoute: typeof SimulationRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiSessionRoute: typeof ApiSessionRoute
   TrainModeRoute: typeof TrainModeRoute
@@ -219,6 +375,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/achievements': {
+      id: '/achievements'
+      path: '/achievements'
+      fullPath: '/achievements'
+      preLoaderRoute: typeof AchievementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/case-discussion': {
+      id: '/case-discussion'
+      path: '/case-discussion'
+      fullPath: '/case-discussion'
+      preLoaderRoute: typeof CaseDiscussionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -242,11 +419,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EvaluationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/extempore': {
+      id: '/extempore'
+      path: '/extempore'
+      fullPath: '/extempore'
+      preLoaderRoute: typeof ExtemporeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/group-discussion': {
       id: '/group-discussion'
       path: '/group-discussion'
       fullPath: '/group-discussion'
       preLoaderRoute: typeof GroupDiscussionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/interview': {
+      id: '/interview'
+      path: '/interview'
+      fullPath: '/interview'
+      preLoaderRoute: typeof InterviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -256,11 +461,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/negotiation': {
+      id: '/negotiation'
+      path: '/negotiation'
+      fullPath: '/negotiation'
+      preLoaderRoute: typeof NegotiationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/observer': {
       id: '/observer'
       path: '/observer'
       fullPath: '/observer'
       preLoaderRoute: typeof ObserverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -270,6 +489,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/public-speaking': {
+      id: '/public-speaking'
+      path: '/public-speaking'
+      fullPath: '/public-speaking'
+      preLoaderRoute: typeof PublicSpeakingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/result': {
       id: '/result'
       path: '/result'
@@ -277,11 +503,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResultRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simulation': {
+      id: '/simulation'
+      path: '/simulation'
+      fullPath: '/simulation'
+      preLoaderRoute: typeof SimulationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -317,15 +557,27 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AchievementsRoute: AchievementsRoute,
+  AnalyticsRoute: AnalyticsRoute,
+  CaseDiscussionRoute: CaseDiscussionRoute,
   DashboardRoute: DashboardRoute,
   DebateRoute: DebateRoute,
   EvaluationRoute: EvaluationRoute,
+  ExtemporeRoute: ExtemporeRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   GroupDiscussionRoute: GroupDiscussionRoute,
+  InterviewRoute: InterviewRoute,
+  LeaderboardRoute: LeaderboardRoute,
   LoginRoute: LoginRoute,
+  NegotiationRoute: NegotiationRoute,
   ObserverRoute: ObserverRoute,
+  PricingRoute: PricingRoute,
   ProfileRoute: ProfileRoute,
+  PublicSpeakingRoute: PublicSpeakingRoute,
   ResultRoute: ResultRoute,
+  SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
+  SimulationRoute: SimulationRoute,
   ApiChatRoute: ApiChatRoute,
   ApiSessionRoute: ApiSessionRoute,
   TrainModeRoute: TrainModeRoute,

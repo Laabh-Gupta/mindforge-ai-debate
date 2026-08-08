@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
-import { FloatingNav } from "@/components/mindforge/FloatingNav";
+import { AppShellRaw } from "@/components/mindforge/AppShell";
 import {
   DIMENSION_LABELS,
   SESSION_KEY,
@@ -174,8 +174,7 @@ function EvaluationPage() {
 
   if (!loading && !session) {
     return (
-      <div className="min-h-screen">
-        <FloatingNav />
+      <AppShellRaw>
         <main className="mx-auto max-w-2xl px-5 pt-20 text-center">
           <h1 className="font-display text-2xl font-bold">No session to evaluate yet</h1>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -185,13 +184,12 @@ function EvaluationPage() {
             <Link to="/train">Go to the Training Hub</Link>
           </Button>
         </main>
-      </div>
+    </AppShellRaw>
     );
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <FloatingNav />
+    <AppShellRaw>
       <main className="mx-auto max-w-6xl px-5 pt-10">
         <section className="glass animate-rise rounded-3xl p-6 text-center sm:p-10">
           <p className="text-xs tracking-widest text-muted-foreground uppercase">
@@ -382,6 +380,6 @@ function EvaluationPage() {
           </Button>
         </div>
       </main>
-    </div>
+    </AppShellRaw>
   );
 }

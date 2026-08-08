@@ -5,7 +5,7 @@ import { Flag, Hand, Mic, SendHorizontal, Sparkle, Timer as TimerIcon, Users } f
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
-import { FloatingNav } from "@/components/mindforge/FloatingNav";
+import { AppShellRaw } from "@/components/mindforge/AppShell";
 import { SpeakerBubble, parseSpeakerTurns, speakerColor } from "@/components/mindforge/SpeakerTurn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -187,8 +187,7 @@ function GroupDiscussionPage() {
   }
 
   return (
-    <div className="min-h-screen pb-12">
-      <FloatingNav />
+    <AppShellRaw>
       <main className="mx-auto max-w-6xl px-5 pt-8">
         {phase === "setup" ? (
           <section className="animate-rise">
@@ -444,6 +443,6 @@ function GroupDiscussionPage() {
           </section>
         )}
       </main>
-    </div>
+    </AppShellRaw>
   );
 }
