@@ -4,9 +4,11 @@ import { z } from "zod";
 import type { SessionEvaluation, ThinkingSteps } from "./evaluation-shared";
 import {
   EvaluationSchema,
+  GdWrapSchema,
   ObserverSchema,
   ThinkingStepsSchema,
   buildEvaluationPrompt,
+  buildGdWrapPrompt,
   buildObserverPrompt,
   buildThinkingPrompt,
   normalizeEvaluation,
@@ -79,6 +81,23 @@ export const generateObserverDiscussion = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) return null;
     return runStructured(key, ObserverSchema, buildObserverPrompt(data.topic));
+  });
+
+const GdWrapInput = z.object({
+  topic: z.string(),
+  format: z.string(),
+  roster: z.string(),
+  transcript: z.string(),
+});
+
+/** Moderator closing feedback + per-participant contribution summary for a GD. */
+export const summarizeGroupDiscussion = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => GdWrapInput.parse(input))
+  .handler(async ({ data }) => {
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) return null;
+    if (!data.transcript.trim()) return null;
+    return runStructured(key, GdWrapSchema, buildGdWrapPrompt(data));
   });
 
 const ExplainInput = z.object({

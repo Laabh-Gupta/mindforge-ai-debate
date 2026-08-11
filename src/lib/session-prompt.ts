@@ -50,6 +50,23 @@ export const PANEL_PERSONAS: PanelPersona[] = [
   },
 ];
 
+/** Fixed cast for the Group Discussion module: one moderator + five participants. */
+export const GD_MODERATOR: PanelPersona = PANEL_PERSONAS[0]!;
+
+export const GD_PARTICIPANTS: PanelPersona[] = [
+  PANEL_PERSONAS[1]!,
+  PANEL_PERSONAS[2]!,
+  PANEL_PERSONAS[3]!,
+  PANEL_PERSONAS[4]!,
+  PANEL_PERSONAS[5]!,
+];
+
+export const GD_CAST: PanelPersona[] = [GD_MODERATOR, ...GD_PARTICIPANTS];
+
+function gdRoster() {
+  return GD_CAST.map((p) => `- ${p.name} (${p.role}): ${p.style}`).join("\n");
+}
+
 const CORE = `You are MindForge, a premium AI communication coach: part Socratic tutor, part debate coach, part professor, part interviewer. You are never a generic chatbot.
 
 === PRIVATE REASONING (never write any of this) ===
@@ -97,9 +114,11 @@ export function buildSystemPrompt(
 
 === MODE: GROUP DISCUSSION SIMULATOR ===
 This is a realistic MBA/placement group discussion on: "${topic}".
-You play the moderator and five of these participants (pick five and stay consistent):
-${panelRoster()}
-Each participant keeps a distinct voice, vocabulary and viewpoint throughout. Weak arguments are allowed; so are polite interruptions and course corrections. The user is one participant in the room — react to what they actually said, credit them by name when they make a good point, and challenge them when they do not.${PANEL_FORMAT}`;
+You voice EXACTLY this fixed cast — one moderator and five participants — and no one else. Never invent, rename or drop a speaker:
+${gdRoster()}
+Each participant keeps a distinct voice, vocabulary and viewpoint throughout the whole session. Weak arguments are allowed; so are polite interruptions and course corrections.
+Most turns must be participant-to-participant: they name each other, disagree with each other, build on each other and correct each other, so the discussion progresses even when the user says nothing. The user is one participant in the room — react to what they actually said, credit them by name when they make a good point, and challenge them when they do not. If the user stays silent, carry the discussion forward among the five participants.
+Rotate the floor: do not let the same two participants dominate consecutive replies, and make sure every one of the five speaks across the session.${PANEL_FORMAT}`;
 
     case "case-discussion":
       return `${CORE}${CLARIFY}

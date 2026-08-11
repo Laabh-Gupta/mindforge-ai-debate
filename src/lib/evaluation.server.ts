@@ -36,6 +36,44 @@ export const ThinkingStepsSchema = z.object({
   nextMove: z.string(),
 });
 
+export const GdWrapSchema = z.object({
+  moderatorClosing: z.string(),
+  moderatorFeedback: z.array(z.string()),
+  userVerdict: z.string(),
+  contributions: z.array(
+    z.object({
+      name: z.string(),
+      role: z.string(),
+      stance: z.string(),
+      contribution: z.string(),
+      impact: z.enum(["high", "medium", "low"]),
+    }),
+  ),
+});
+
+export function buildGdWrapPrompt(input: {
+  topic: string;
+  format: string;
+  roster: string;
+  transcript: string;
+}) {
+  return `You are Meera Iyer, the moderator who just chaired a ${input.format} group discussion on: "${input.topic}".
+
+Cast at the table (plus "You", the human participant):
+${input.roster}
+
+Full transcript:
+${input.transcript}
+
+Close the session as the moderator would:
+- moderatorClosing: two sentences summarising where the discussion actually landed, in your own voice as the chair.
+- moderatorFeedback: exactly 3 short pieces of feedback addressed directly to the human participant ("You"), each referring to something they actually said or failed to do in this discussion.
+- userVerdict: one sentence judging the human participant's overall showing in this room.
+- contributions: one entry for EVERY speaker who appears in the transcript, including "You" (role "Participant"). "stance" is their position in five to ten words, "contribution" is one sentence on what they added to the discussion, "impact" is high, medium or low based on how much they moved the discussion.
+
+Stay inside the subject matter. Never invent statistics, studies or anything not said in the transcript.`;
+}
+
 const THINKING_LENS: Record<string, string> = {
   debate:
     "Use debate vocabulary: objections, counterexamples, burden of proof, concessions, named fallacies.",
