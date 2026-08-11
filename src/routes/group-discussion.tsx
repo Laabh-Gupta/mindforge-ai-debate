@@ -1,22 +1,33 @@
 import { useChat } from "@ai-sdk/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Flag, Hand, Mic, SendHorizontal, Sparkle, Timer as TimerIcon, Users } from "lucide-react";
+import {
+  ClipboardList,
+  Flag,
+  Hand,
+  Mic,
+  SendHorizontal,
+  Sparkle,
+  Timer as TimerIcon,
+  Users,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { AppShellRaw } from "@/components/mindforge/AppShell";
-import { SpeakerBubble, parseSpeakerTurns, speakerColor } from "@/components/mindforge/SpeakerTurn";
+import { parseSpeakerTurns, speakerColor } from "@/components/mindforge/SpeakerTurn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SESSION_KEY, type StoredSession } from "@/lib/evaluation-shared";
 import { defaultProfileIdForMode, loadSelectedProfileId } from "@/lib/evaluation-profiles";
-import { OPENING_TRIGGER, PANEL_PERSONAS } from "@/lib/session-prompt";
+import { GD_CAST, GD_MODERATOR, GD_PARTICIPANTS, OPENING_TRIGGER } from "@/lib/session-prompt";
+import { summarizeGroupDiscussion } from "@/lib/session.functions";
 
 const TITLE = "Group Discussion Simulator — MindForge";
 const DESCRIPTION =
-  "Join a live MBA-style group discussion room with an AI moderator and five opinionated participants. Cut in, hold the floor, and get evaluated.";
+  "Join a live MBA-style group discussion room with an AI moderator and five opinionated participants who argue with each other. Speak, get a real transcript, moderator feedback and a contribution summary.";
 
 export const Route = createFileRoute("/group-discussion")({
   head: () => ({
@@ -48,6 +59,28 @@ const TOPICS = [
   "Should college admissions drop entrance exams?",
 ];
 
+type Wrap = {
+  moderatorClosing: string;
+  moderatorFeedback: string[];
+  userVerdict: string;
+  contributions: {
+    name: string;
+    role: string;
+    stance: string;
+    contribution: string;
+    impact: "high" | "medium" | "low";
+  }[];
+};
+
+type TranscriptLine = {
+  key: string;
+  index: number;
+  speaker: string;
+  role: string;
+  content: string;
+  isUser: boolean;
+};
+
 function messageText(message: UIMessage) {
   return message.parts
     .map((part) => (part.type === "text" ? part.text : ""))
@@ -72,15 +105,38 @@ function initialsOf(name: string) {
     .toUpperCase();
 }
 
+/** Match a spoken name back onto the fixed cast so cards stay stable. */
+function resolveCast(raw: string | null) {
+  if (!raw) return null;
+  const bare = raw.replace(/\s*\(.*\)/, "").trim().toLowerCase();
+  return (
+    GD_CAST.find((p) => p.name.toLowerCase() === bare) ??
+    GD_CAST.find(
+      (p) => bare.includes(p.name.split(" ").at(-1)!.toLowerCase()) && bare.length > 2,
+    ) ??
+    null
+  );
+}
+
+const IMPACT_STYLES: Record<Wrap["contributions"][number]["impact"], string> = {
+  high: "bg-success/15 text-success",
+  medium: "bg-warning/15 text-warning",
+  low: "bg-secondary text-muted-foreground",
+};
+
 function GroupDiscussionPage() {
   const navigate = useNavigate();
+  const wrapUp = useServerFn(summarizeGroupDiscussion);
   const [phase, setPhase] = useState<"setup" | "live">("setup");
   const [topicInput, setTopicInput] = useState("");
   const [topic, setTopic] = useState("");
   const [format, setFormat] = useState<string>(FORMATS[0].id);
   const [draft, setDraft] = useState("");
   const [elapsed, setElapsed] = useState(0);
+  const [wrap, setWrap] = useState<Wrap | null>(null);
+  const [wrapping, setWrapping] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
 
   const transport = useMemo(
@@ -102,25 +158,61 @@ function GroupDiscussionPage() {
   const visible = messages.filter((m) => messageText(m) !== OPENING_TRIGGER);
   const roomThinking = busy && !(status === "streaming" && visible.at(-1)?.role === "assistant");
 
-  const yourTurns = visible.filter((m) => m.role === "user").length;
-  const yourWords = visible
-    .filter((m) => m.role === "user")
-    .reduce((sum, m) => sum + messageText(m).split(/\s+/).filter(Boolean).length, 0);
-
-  // Who has actually spoken so far, in order of first appearance.
-  const spoken = useMemo(() => {
-    const seen = new Map<string, number>();
-    visible
-      .filter((m) => m.role === "assistant")
-      .forEach((m) =>
-        parseSpeakerTurns(messageText(m)).forEach((t) => {
-          if (!t.speaker) return;
-          const name = t.speaker.replace(/\s*\(.*\)/, "").trim();
-          seen.set(name, (seen.get(name) ?? 0) + 1);
-        }),
-      );
-    return seen;
+  // Flatten every message into a single ordered discussion transcript.
+  const transcript = useMemo<TranscriptLine[]>(() => {
+    const lines: TranscriptLine[] = [];
+    visible.forEach((m) => {
+      const text = messageText(m);
+      if (!text) return;
+      if (m.role === "user") {
+        if (text.startsWith("(I stay silent")) return;
+        lines.push({
+          key: `${m.id}-you`,
+          index: lines.length + 1,
+          speaker: "You",
+          role: "Participant",
+          content: text,
+          isUser: true,
+        });
+        return;
+      }
+      parseSpeakerTurns(text).forEach((turn, i) => {
+        const cast = resolveCast(turn.speaker);
+        lines.push({
+          key: `${m.id}-${i}`,
+          index: lines.length + 1,
+          speaker: cast?.name ?? turn.speaker ?? "Participant",
+          role: cast?.role ?? "Participant",
+          content: turn.content,
+          isUser: false,
+        });
+      });
+    });
+    return lines;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
+
+  const yourLines = transcript.filter((l) => l.isUser);
+  const yourTurns = yourLines.length;
+  const yourWords = yourLines.reduce(
+    (sum, l) => sum + l.content.split(/\s+/).filter(Boolean).length,
+    0,
+  );
+
+  const counts = useMemo(() => {
+    const map = new Map<string, number>();
+    transcript.forEach((l) => map.set(l.speaker, (map.get(l.speaker) ?? 0) + 1));
+    return map;
+  }, [transcript]);
+
+  const lastSpeaker = transcript.at(-1)?.speaker ?? null;
+
+  function statusOf(name: string) {
+    if (busy && status === "streaming" && lastSpeaker === name) return "Speaking";
+    if (roomThinking) return "Preparing";
+    if ((counts.get(name) ?? 0) === 0) return "Waiting";
+    return "Listening";
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -147,6 +239,7 @@ function GroupDiscussionPage() {
     if (!chosen) return;
     setTopic(chosen);
     setElapsed(0);
+    setWrap(null);
     setPhase("live");
   }
 
@@ -161,8 +254,35 @@ function GroupDiscussionPage() {
   function letRoomRun() {
     if (busy) return;
     void sendMessage({
-      text: "(I stay silent and listen — let the other participants continue the discussion.)",
+      text: "(I stay silent and listen — let the other participants continue the discussion among themselves.)",
     });
+  }
+
+  function transcriptText() {
+    return transcript.map((l) => `${l.speaker} (${l.role}): ${l.content}`).join("\n");
+  }
+
+  async function closeDiscussion() {
+    if (wrapping || busy) return;
+    setWrapping(true);
+    try {
+      const result = await wrapUp({
+        data: {
+          topic,
+          format,
+          roster: GD_CAST.map((p) => `- ${p.name} (${p.role})`).join("\n"),
+          transcript: transcriptText(),
+        },
+      });
+      if (!result) {
+        toast.error("The moderator could not summarise this discussion. Try again.");
+        return;
+      }
+      setWrap(result as Wrap);
+      setTimeout(() => wrapRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    } finally {
+      setWrapping(false);
+    }
   }
 
   function finish() {
@@ -172,10 +292,10 @@ function GroupDiscussionPage() {
       topic,
       variant: format,
       profileId: loadSelectedProfileId(defaultProfileIdForMode("group-discussion")),
-      turns: visible.map((m) => ({
-        speaker: m.role === "user" ? "You" : "GD Room",
-        role: m.role === "user" ? ("user" as const) : ("ai" as const),
-        content: messageText(m),
+      turns: transcript.map((l) => ({
+        speaker: l.isUser ? "You" : `${l.speaker} (${l.role})`,
+        role: l.isUser ? ("user" as const) : ("ai" as const),
+        content: l.content,
       })),
     };
     try {
@@ -270,8 +390,17 @@ function GroupDiscussionPage() {
                 <p className="text-xs tracking-widest text-muted-foreground uppercase">
                   Who's at the table
                 </p>
+                <div className="mt-4 flex gap-3 rounded-2xl bg-secondary/40 p-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-brand text-xs font-semibold text-primary-foreground">
+                    {initialsOf(GD_MODERATOR.name)}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{GD_MODERATOR.name}</p>
+                    <p className="text-xs text-primary">{GD_MODERATOR.role}</p>
+                  </div>
+                </div>
                 <ul className="mt-4 space-y-4">
-                  {PANEL_PERSONAS.map((p) => (
+                  {GD_PARTICIPANTS.map((p) => (
                     <li key={p.name} className="flex gap-3">
                       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-secondary text-xs font-semibold">
                         {initialsOf(p.name)}
@@ -279,6 +408,7 @@ function GroupDiscussionPage() {
                       <div className="min-w-0">
                         <p className={`text-sm font-semibold ${speakerColor(p.name)}`}>{p.name}</p>
                         <p className="text-xs text-muted-foreground">{p.role}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground/80">{p.style}</p>
                       </div>
                     </li>
                   ))}
@@ -303,27 +433,54 @@ function GroupDiscussionPage() {
               </span>
             </div>
 
-            <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
+            <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
               <div>
-                <div className="space-y-5">
-                  {visible.map((m) =>
-                    m.role === "user" ? (
-                      <div key={m.id} className="flex justify-end">
-                        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-5 py-3 text-sm leading-relaxed whitespace-pre-line text-primary-foreground">
-                          {messageText(m)}
+                {/* Discussion transcript */}
+                <div className="glass overflow-hidden rounded-2xl">
+                  <div className="flex items-center justify-between border-b border-border px-5 py-3">
+                    <p className="text-xs tracking-widest text-muted-foreground uppercase">
+                      Discussion transcript
+                    </p>
+                    <span className="text-[11px] text-muted-foreground">
+                      {transcript.length} turns
+                    </span>
+                  </div>
+                  <ol className="divide-y divide-border/60">
+                    {transcript.map((line) => (
+                      <li
+                        key={line.key}
+                        className={`grid grid-cols-[2.5rem_minmax(0,1fr)] gap-3 px-5 py-4 ${
+                          line.isUser ? "bg-primary/5" : ""
+                        }`}
+                      >
+                        <span className="pt-0.5 font-mono text-[11px] text-muted-foreground">
+                          {line.index.toString().padStart(2, "0")}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="flex flex-wrap items-baseline gap-x-2">
+                            <span
+                              className={`text-xs font-semibold tracking-wide uppercase ${
+                                line.isUser ? "text-primary" : speakerColor(line.speaker)
+                              }`}
+                            >
+                              {line.speaker}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">{line.role}</span>
+                          </p>
+                          <p className="mt-1 text-sm leading-relaxed whitespace-pre-line text-foreground">
+                            {line.content}
+                          </p>
                         </div>
-                      </div>
-                    ) : (
-                      <div key={m.id} className="space-y-4">
-                        {parseSpeakerTurns(messageText(m)).map((turn, i) => (
-                          <SpeakerBubble key={i} speaker={turn.speaker} content={turn.content} />
-                        ))}
-                      </div>
-                    ),
-                  )}
-
+                      </li>
+                    ))}
+                    {transcript.length === 0 && !roomThinking && (
+                      <li className="px-5 py-6 text-sm text-muted-foreground">
+                        The room is settling in...
+                      </li>
+                    )}
+                  </ol>
                   {roomThinking && (
-                    <div className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 border-t border-border px-5 py-3 text-sm text-muted-foreground">
                       <span className="flex gap-1">
                         {[0, 1, 2].map((i) => (
                           <span
@@ -336,13 +493,14 @@ function GroupDiscussionPage() {
                       The room is talking...
                     </div>
                   )}
-                  {error && !busy && (
-                    <p className="px-1 text-sm text-destructive">
-                      {error.message || "The room could not respond. Please try again."}
-                    </p>
-                  )}
-                  <div ref={endRef} />
                 </div>
+
+                {error && !busy && (
+                  <p className="mt-3 px-1 text-sm text-destructive">
+                    {error.message || "The room could not respond. Please try again."}
+                  </p>
+                )}
+                <div ref={endRef} />
 
                 <form onSubmit={send} className="glass sticky bottom-4 mt-6 rounded-2xl p-4">
                   <Textarea
@@ -384,8 +542,12 @@ function GroupDiscussionPage() {
                   </div>
                 </form>
 
-                {visible.length > 1 && (
-                  <div className="mt-4 flex justify-end">
+                {transcript.length > 1 && (
+                  <div className="mt-4 flex flex-wrap justify-end gap-3">
+                    <Button variant="outline" onClick={closeDiscussion} disabled={busy || wrapping}>
+                      <ClipboardList className="mr-1 h-4 w-4" />
+                      {wrapping ? "Moderator is closing..." : "Close & get moderator feedback"}
+                    </Button>
                     <Button
                       className="h-11 bg-gradient-brand px-6 text-primary-foreground"
                       onClick={finish}
@@ -395,43 +557,129 @@ function GroupDiscussionPage() {
                     </Button>
                   </div>
                 )}
+
+                {wrap && (
+                  <div ref={wrapRef} className="animate-rise mt-8 space-y-5">
+                    <div className="glass rounded-2xl p-5">
+                      <p className="text-xs tracking-widest text-primary uppercase">
+                        Moderator's closing — {GD_MODERATOR.name}
+                      </p>
+                      <p className="mt-3 text-sm leading-relaxed text-foreground">
+                        {wrap.moderatorClosing}
+                      </p>
+                      <p className="mt-4 text-xs tracking-widest text-muted-foreground uppercase">
+                        Feedback for you
+                      </p>
+                      <ul className="mt-3 space-y-2">
+                        {wrap.moderatorFeedback.map((f, i) => (
+                          <li key={i} className="flex gap-2 text-sm text-muted-foreground">
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                            <span className="text-foreground">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-4 rounded-xl bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
+                        {wrap.userVerdict}
+                      </p>
+                    </div>
+
+                    <div className="glass rounded-2xl p-5">
+                      <p className="text-xs tracking-widest text-muted-foreground uppercase">
+                        Participant contribution summary
+                      </p>
+                      <ul className="mt-4 space-y-4">
+                        {wrap.contributions.map((c) => (
+                          <li key={c.name} className="flex gap-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-secondary text-[11px] font-semibold">
+                              {initialsOf(c.name)}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="flex flex-wrap items-center gap-2">
+                                <span
+                                  className={`text-sm font-semibold ${speakerColor(c.name)}`}
+                                >
+                                  {c.name}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground">{c.role}</span>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[10px] tracking-wide uppercase ${
+                                    IMPACT_STYLES[c.impact] ?? IMPACT_STYLES.low
+                                  }`}
+                                >
+                                  {c.impact} impact
+                                </span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {counts.get(c.name) ?? 0} turns
+                                </span>
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">{c.stance}</p>
+                              <p className="mt-1 text-sm text-foreground">{c.contribution}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <aside className="glass h-fit rounded-2xl p-5 lg:sticky lg:top-24">
                 <p className="text-xs tracking-widest text-muted-foreground uppercase">
-                  Participants
+                  The room
                 </p>
                 <ul className="mt-4 space-y-3">
-                  {PANEL_PERSONAS.map((p) => {
-                    const count = spoken.get(p.name) ?? 0;
+                  {GD_CAST.map((p) => {
+                    const count = counts.get(p.name) ?? 0;
+                    const state = statusOf(p.name);
+                    const isModerator = p.name === GD_MODERATOR.name;
                     return (
-                      <li key={p.name} className="flex items-center gap-3">
+                      <li
+                        key={p.name}
+                        className={`flex items-center gap-3 rounded-xl px-2 py-2 transition-colors ${
+                          state === "Speaking" ? "bg-primary/10" : ""
+                        }`}
+                      >
                         <span
-                          className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[11px] font-semibold ${
-                            count > 0 ? "bg-primary/20" : "bg-secondary"
+                          className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[11px] font-semibold ${
+                            isModerator
+                              ? "bg-gradient-brand text-primary-foreground"
+                              : count > 0
+                                ? "bg-primary/20"
+                                : "bg-secondary"
                           }`}
                         >
                           {initialsOf(p.name)}
+                          {state === "Speaking" && (
+                            <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 animate-pulse rounded-full bg-success ring-2 ring-background" />
+                          )}
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className={`truncate text-xs font-semibold ${speakerColor(p.name)}`}>
                             {p.name}
                           </p>
                           <p className="truncate text-[11px] text-muted-foreground">{p.role}</p>
+                          <p
+                            className={`truncate text-[10px] tracking-wide uppercase ${
+                              state === "Speaking" ? "text-success" : "text-muted-foreground/70"
+                            }`}
+                          >
+                            {state} · {count} turns
+                          </p>
                         </div>
-                        <span className="shrink-0 text-[11px] text-muted-foreground">{count}</span>
                       </li>
                     );
                   })}
-                  <li className="flex items-center gap-3 border-t border-border pt-3">
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-brand text-[11px] font-semibold text-primary-foreground">
+                  <li className="flex items-center gap-3 border-t border-border px-2 pt-4">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-brand text-[11px] font-semibold text-primary-foreground">
                       YOU
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-semibold">You</p>
                       <p className="truncate text-[11px] text-muted-foreground">Participant</p>
+                      <p className="truncate text-[10px] tracking-wide text-muted-foreground/70 uppercase">
+                        {yourTurns > 0 ? "Active" : "Yet to speak"} · {yourTurns} turns
+                      </p>
                     </div>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">{yourTurns}</span>
                   </li>
                 </ul>
                 <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
