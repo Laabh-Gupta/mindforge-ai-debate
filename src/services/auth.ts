@@ -36,11 +36,17 @@ export async function signInWithEmail(email: string, password: string): Promise<
   return toAuthUser(data.user);
 }
 
+export type SignUpResult = {
+  user: AuthUser;
+  /** True if Supabase requires email confirmation before a session exists. */
+  needsEmailConfirmation: boolean;
+};
+
 export async function signUpWithEmail(
   email: string,
   password: string,
   name: string,
-): Promise<AuthUser> {
+): Promise<SignUpResult> {
   const supabase = requireClient();
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -48,10 +54,8 @@ export async function signUpWithEmail(
     options: { data: { name } },
   });
   if (error) throw error;
-  // Email confirmation may be required, in which case data.user exists but
-  // there's no session yet — the caller still gets a user object to greet.
   if (!data.user) throw new Error("Sign-up succeeded but returned no user — check your inbox.");
-  return toAuthUser(data.user);
+  return { user: toAuthUser(data.user), needsEmailConfirmation: !data.session };
 }
 
 /**
