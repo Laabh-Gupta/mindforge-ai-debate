@@ -1,14 +1,280 @@
-# Welcome to your Lovable project
+# MindForge AI
+
+Build a modern AI-powered web application called "MindForge."
+
+MindForge is a platform that helps people improve critical thinking, reasoning, public speaking, interview performance, and decision-making by debating with an AI.
+
+The target audience includes MBA students, UPSC aspirants, RBI Grade B aspirants, law students, founders, college students, professionals, and anyone who wants to strengthen logical thinking.
+
+The design should be clean, premium, and minimal, inspired by Duolingo, Notion, and Linear. Use a dark theme with deep navy (#0B1220), blue gradients, purple highlights, rounded cards, subtle glassmorphism, smooth animations, modern typography, and generous spacing.
+
+The application should be fully responsive for desktop, tablet, and mobile.
+
+--------------------------------------------------
+
+PAGES
+
+--------------------------------------------------
+
+1. Landing Page
+
+Create a beautiful landing page with:
+
+Hero section:
+
+Headline:
+
+"Sharpen Your Mind. Challenge Every Idea."
+
+Subheadline:
+
+"Debate with AI, discover logical fallacies, improve reasoning, and become a better thinker."
+
+Primary button:
+
+Start Debating
+
+Secondary button:
+
+Learn More
+
+Below the hero, add feature cards:
+
+🧠 AI Debate Coach
+
+⚖ Logical Fallacy Detection
+
+📈 Progress Tracking
+
+🎯 Interview Practice
+
+💬 Group Discussion Training
+
+🏆 Daily Challenges
+
+Add a "How It Works" section:
+
+Step 1
+
+Choose a topic.
+
+Step 2
+
+Share your opinion.
+
+Step 3
+
+AI challenges your reasoning.
+
+Step 4
+
+Receive feedback and improve.
+
+Add testimonials with placeholder content.
+
+Create a modern footer with links.
+
+--------------------------------------------------
+
+2. Authentication
+
+Create Sign Up and Login pages.
+
+Allow login with:
+
+Email
+
+Google
+
+Show modern authentication screens.
+
+--------------------------------------------------
+
+3. Dashboard
+
+After login, display:
+
+Welcome message
+
+Daily streak
+
+Current level
+
+XP earned
+
+Recent debates
+
+Continue Debate button
+
+Start New Debate button
+
+Today's Challenge
+
+Statistics cards:
+
+Total Debates
+
+Average Logic Score
+
+Current Streak
+
+Hours Practiced
+
+--------------------------------------------------
+
+4. Debate Screen
+
+The main feature.
+
+Layout:
+
+Topic input
+
+Suggested topics
+
+Chat interface
+
+User message
+
+AI message
+
+Large text input
+
+Send button
+
+Voice input placeholder
+
+When user sends an opinion:
+
+Display the opinion inside the chat.
+
+Generate a placeholder AI response.
+
+Display buttons:
+
+Continue Debate
+
+Finish Debate
+
+--------------------------------------------------
+
+5. Debate Result Page
+
+Show:
+
+Overall Score
+
+Logic
+
+Evidence
+
+Clarity
+
+Confidence
+
+Bias
+
+Communication
+
+Display beautiful circular progress indicators.
+
+Below them show:
+
+Strengths
+
+Weaknesses
+
+Logical Fallacies Found
+
+Suggestions for Improvement
+
+Next Challenge button
+
+--------------------------------------------------
+
+6. Profile
+
+Display:
+
+Avatar
+
+Username
+
+Current Rank
+
+XP
+
+Badges
+
+Achievements
+
+Debate History
+
+Settings button
+
+--------------------------------------------------
+
+UI REQUIREMENTS
+
+Use rounded cards.
+
+Modern gradients.
+
+Floating navigation.
+
+Smooth hover animations.
+
+Professional icons.
+
+Beautiful loading animations.
+
+Minimalist charts.
+
+Clean dashboard layout.
+
+Consistent spacing.
+
+Use Lucide icons.
+
+Use reusable React components.
+
+--------------------------------------------------
+
+TECHNICAL
+
+Use React.
+
+Use TypeScript.
+
+Use TailwindCSS.
+
+Organize components cleanly.
+
+Prepare the project for future Supabase integration.
+
+Prepare reusable services for future AI integration.
+
+Keep all AI responses as placeholder text for now.
+
+Do not implement backend logic yet.
+
+Focus on creating a production-quality frontend with excellent UX.
+
+--------------------------------------------------
+
+GOAL
+
+This should feel like a premium SaaS product that could realistically become "Duolingo for Critical Thinking." Most AI chatbots simply answer questions. MindForge should refuse to let users "win" easily. It should actively test their reasoning by asking follow-up questions, pointing out contradictions, introducing evidence from opposing viewpoints, and adapting its strategy based on the user's skill level. That creates a learning experience rather than just another chat interface.
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/38e26c56-0859-4129-8187-6e196947b0ce).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +286,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
