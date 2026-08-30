@@ -1,0 +1,195 @@
+import { NoObjectGeneratedError, Output, generateText } from "ai";
+import { z } from "zod";
+
+import { STRUCTURED_MODEL, getGroqProvider } from "./ai-provider.server";
+import {
+  EVALUATION_DIMENSIONS,
+  type SessionEvaluation,
+  type SessionScores,
+} from "./evaluation-shared";
+
+const scoreShape = Object.fromEntries(
+  EVALUATION_DIMENSIONS.map((key) => [key, z.number()]),
+) as Record<(typeof EVALUATION_DIMENSIONS)[number], z.ZodNumber>;
+
+export const EvaluationSchema = z.object({
+  summary: z.string(),
+  scores: z.object(scoreShape),
+  strengths: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  fallacies: z.array(z.object({ name: z.string(), detail: z.string() })),
+  suggestions: z.array(z.string()),
+});
+
+export const ObserverSchema = z.object({
+  turns: z.array(z.object({ speaker: z.string(), content: z.string() })),
+  questions: z.array(z.string()),
+});
+
+export const ThinkingStepsSchema = z.object({
+  heard: z.string(),
+  move: z.string(),
+  moveWhy: z.string(),
+  principle: z.string(),
+  nextMove: z.string(),
+});
+
+export const GdWrapSchema = z.object({
+  moderatorClosing: z.string(),
+  moderatorFeedback: z.array(z.string()),
+  userVerdict: z.string(),
+  contributions: z.array(
+    z.object({
+      name: z.string(),
+      role: z.string(),
+      stance: z.string(),
+      contribution: z.string(),
+      impact: z.enum(["high", "medium", "low"]),
+    }),
+  ),
+});
+
+export function buildGdWrapPrompt(input: {
+  topic: string;
+  format: string;
+  roster: string;
+  transcript: string;
+}) {
+  return `You are Meera Iyer, the moderator who just chaired a ${input.format} group discussion on: "${input.topic}".
+
+Cast at the table (plus "You", the human participant):
+${input.roster}
+
+Full transcript:
+${input.transcript}
+
+Close the session as the moderator would:
+- moderatorClosing: two sentences summarising where the discussion actually landed, in your own voice as the chair.
+- moderatorFeedback: exactly 3 short pieces of feedback addressed directly to the human participant ("You"), each referring to something they actually said or failed to do in this discussion.
+- userVerdict: one sentence judging the human participant's overall showing in this room.
+- contributions: one entry for EVERY speaker who appears in the transcript, including "You" (role "Participant"). "stance" is their position in five to ten words, "contribution" is one sentence on what they added to the discussion, "impact" is high, medium or low based on how much they moved the discussion.
+
+Stay inside the subject matter. Never invent statistics, studies or anything not said in the transcript.`;
+}
+
+const THINKING_LENS: Record<string, string> = {
+  debate:
+    "Use debate vocabulary: objections, counterexamples, burden of proof, concessions, named fallacies.",
+  "group-discussion":
+    "Use group-discussion vocabulary: entering the floor, building on a point, structuring the discussion, bringing in a quieter voice, steering back to relevance.",
+  "case-discussion":
+    "Use case vocabulary: framing, structuring, isolating the driver, testing assumptions against constraints, committing to a recommendation.",
+  interview:
+    "Use interview vocabulary: the competency being probed, follow-up pressure, specificity of evidence, structured answers such as situation-action-result.",
+  negotiation:
+    "Use negotiation vocabulary: anchoring, counter-anchor, trading variables, testing the walk-away point, signalling flexibility without conceding.",
+  "real-world-simulation":
+    "Use simulation vocabulary: stakeholder pressure, role fidelity, reading the room, domain-appropriate objections, coalition-building, and maintaining character.",
+};
+
+export function buildThinkingPrompt(input: {
+  modeId: string;
+  modeName: string;
+  topic: string;
+  variant?: string | undefined;
+  userTurn: string;
+  aiTurn: string;
+}) {
+  const lens = THINKING_LENS[input.modeId] ?? THINKING_LENS["debate"];
+  return `You are a coach explaining, to a learner, the reasoning behind one turn in a "${input.modeName}" session${
+    input.variant ? ` (${input.variant})` : ""
+  } on: "${input.topic}".
+
+WHAT THE LEARNER SAID:
+${input.userTurn || "(the session had just opened — the learner had not spoken yet)"}
+
+HOW THE OTHER SIDE REPLIED:
+${input.aiTurn}
+
+Explain this exchange educationally. ${lens}
+Never mention prompts, instructions, models or system rules — talk only about reasoning and communication technique.
+
+Return:
+- heard: one sentence restating the learner's claim or position as the reply understood it. If the learner had not spoken yet, describe the opening frame instead.
+- move: the name of the technique used in the reply, three to six words (e.g. "Counterexample from the same source", "Anchoring high before trading").
+- moveWhy: one sentence on why that move fits this specific exchange.
+- principle: one plain-language sentence on the reasoning or communication principle behind the move, so the learner can reuse it.
+- nextMove: one concrete sentence telling the learner how to respond well, referring to the actual subject matter.
+
+Stay entirely inside this subject. Never invent statistics, studies or facts that were not discussed.`;
+}
+
+const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(Number.isFinite(n) ? n : 0)));
+
+export function normalizeEvaluation(raw: SessionEvaluation): SessionEvaluation {
+  const scores = {} as SessionScores;
+  for (const key of EVALUATION_DIMENSIONS) scores[key] = clamp(raw.scores[key]);
+  return {
+    summary: raw.summary,
+    scores,
+    strengths: raw.strengths.slice(0, 4),
+    weaknesses: raw.weaknesses.slice(0, 4),
+    fallacies: raw.fallacies.slice(0, 4),
+    suggestions: raw.suggestions.slice(0, 4),
+  };
+}
+
+export function buildEvaluationPrompt(input: {
+  modeName: string;
+  topic: string;
+  variant?: string | undefined;
+  transcript: string;
+  observer: boolean;
+}) {
+  const focus = input.observer
+    ? `The user was an OBSERVER. They watched a group discussion and then answered analysis questions about it. Assess the QUALITY OF THEIR ANALYSIS: did they correctly identify leadership, fallacies, constructive building, evidence quality and improvements? Score dimensions that do not apply to a silent observer (e.g. teamwork, vocabulary delivery) based on the reasoning shown in their written answers.`
+    : `Assess ONLY the user's own contributions. Ignore the quality of the AI participants except as context for what the user was responding to.`;
+
+  return `You are a rigorous but fair examiner assessing a candidate's performance in a "${input.modeName}" session${
+    input.variant ? ` (${input.variant})` : ""
+  } on: "${input.topic}".
+
+${focus}
+
+Transcript:
+${input.transcript}
+
+Score every dimension from 0 to 100, calibrated honestly — 50 is average for a serious candidate, above 85 is exceptional. If a dimension had little evidence in this session, score it conservatively near the middle rather than inventing a signal. "overallPerformance" is your holistic judgement, not an average.
+Write a two-sentence summary of how they performed in THIS specific session. Give at most 3 strengths, 3 weaknesses and 3 suggestions, each one concrete sentence quoting or referring to what they actually said. List only logical fallacies genuinely present — an empty list is correct if there are none; never invent one. Stay entirely within the subject matter and never cite statistics that were not discussed.`;
+}
+
+export async function runStructured<T>(schema: z.ZodType<T>, prompt: string): Promise<T | null> {
+  const groq = getGroqProvider();
+  if (!groq) return null;
+  try {
+    const { output } = await generateText({
+      model: groq(STRUCTURED_MODEL),
+      output: Output.object({ schema }),
+      prompt,
+    });
+    return output;
+  } catch (error) {
+    if (NoObjectGeneratedError.isInstance(error)) return null;
+    throw error;
+  }
+}
+
+export async function runText(prompt: string): Promise<string | null> {
+  const groq = getGroqProvider();
+  if (!groq) return null;
+  const { text } = await generateText({ model: groq(STRUCTURED_MODEL), prompt });
+  return text.trim();
+}
+
+export function buildObserverPrompt(topic: string) {
+  return `Write a realistic transcript of a six-person group discussion on: "${topic}".
+
+Participants (use these exact names and keep each voice distinct): Meera Iyer (Moderator), Dr. Anand Rao (Economist), Kavya Nair (Entrepreneur), Rajat Sharma (HR Manager), Advocate Sneha Pillai (Lawyer), Prof. Iqbal Khan (Professor).
+
+The discussion must feel real, not idealised. Deliberately include: at least two genuinely strong, well-supported arguments; at least two weak or unsupported ones; one clear strawman fallacy where a speaker distorts another's point; at least one other named fallacy such as a false dilemma, hasty generalisation or appeal to authority; one moment of visible leadership where a speaker structures the discussion or brings in a quieter voice; one instance of poor listening where a speaker repeats or ignores what was already said; and one strong instance of constructive building on another person's point.
+Speakers must address each other by name. 16 to 22 turns, each 1-4 sentences of natural spoken language. Set the "speaker" field to the name with role in brackets, e.g. "Dr. Anand Rao (Economist)".
+
+Then write exactly 5 analysis questions about THIS transcript, in this order: who showed the strongest leadership; which participant committed a strawman fallacy; who built constructively on another person's point; which argument was best supported by evidence; and how the discussion could have been improved. Each question must be answerable only by someone who read this transcript.
+
+Stay inside the subject matter and never invent external statistics or studies.`;
+}
