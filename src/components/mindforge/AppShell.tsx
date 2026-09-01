@@ -14,6 +14,8 @@ import {
 import { Logo } from "./Logo";
 import { CommandPalette } from "./CommandPalette";
 import { NAV_SECTIONS } from "@/lib/app-nav";
+import { useAuthUser } from "@/hooks/use-auth-user";
+import { initialsFor } from "@/lib/profile-display";
 
 type Props = {
   title: string;
@@ -53,6 +55,8 @@ export function AppShell({ title, subtitle, actions, children, width = "default"
 export function AppShellRaw({ children }: { children: ReactNode }) {
   const [navOpen, setNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const { user } = useAuthUser();
+  const displayName = user?.name ?? "Guest";
 
   return (
     <div className="min-h-screen lg:flex">
@@ -68,7 +72,7 @@ export function AppShellRaw({ children }: { children: ReactNode }) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 shrink-0 overflow-y-auto border-r border-border bg-card/60 px-4 py-5 backdrop-blur-xl transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 shrink-0 overflow-y-auto border-r border-border bg-card/60 px-4 py-5 backdrop-blur-xl transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           navOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -161,11 +165,11 @@ export function AppShellRaw({ children }: { children: ReactNode }) {
                     aria-label="Account menu"
                     className="grid h-9 w-9 place-items-center rounded-full bg-gradient-brand font-display text-xs font-bold text-primary-foreground"
                   >
-                    AM
+                    {initialsFor(user?.name)}
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuLabel>Aarav Mehta</DropdownMenuLabel>
+                  <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/profile">

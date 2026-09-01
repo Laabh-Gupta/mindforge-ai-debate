@@ -1,10 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Award, Settings, Zap, Flame } from "lucide-react";
+import { Award, Settings, Zap, Flame, Pencil, Loader2 } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { AppShellRaw } from "@/components/mindforge/AppShell";
 import { achievements, badges, profileUser, recentDebates } from "@/lib/mindforge-data";
+import { useAuthUser } from "@/hooks/use-auth-user";
+import { initialsFor } from "@/lib/profile-display";
+import { describeAuthError, updateProfileName } from "@/services/auth";
 
 const title = "Your Profile — MindForge";
 const description =
@@ -24,19 +38,93 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const xpPct = Math.round((profileUser.xp / profileUser.nextRankXp) * 100);
+  const { user } = useAuthUser();
+  const displayName = user?.name ?? "Guest";
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function openEdit() {
+    setNameInput(user?.name ?? "");
+    setError(null);
+    setEditOpen(true);
+  }
+
+  async function handleSaveName(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await updateProfileName(nameInput.trim());
+      setEditOpen(false);
+      toast.success("Name updated");
+    } catch (err) {
+      setError(describeAuthError(err));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <AppShellRaw>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit name</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveName} className="space-y-4">
+            {error && (
+              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </p>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="profile-name">Full name</Label>
+              <Input
+                id="profile-name"
+                required
+                autoFocus
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                disabled={!user}
+              />
+              {!user && (
+                <p className="text-xs text-muted-foreground">
+                  Sign in to edit your name — this is disabled in guest mode.
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={saving || !user}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <main className="mx-auto max-w-6xl px-5 pt-10">
         <section className="glass rounded-3xl p-6 sm:p-8">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
             <div className="flex min-w-0 items-center gap-4">
               <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-gradient-brand font-display text-xl font-bold text-primary-foreground">
-                AM
+                {initialsFor(user?.name)}
               </span>
               <div className="min-w-0">
-                <h1 className="truncate font-display text-2xl font-bold">{profileUser.name}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="truncate font-display text-2xl font-bold">{displayName}</h1>
+                  <button
+                    type="button"
+                    onClick={openEdit}
+                    aria-label="Edit name"
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   {profileUser.handle} · {profileUser.rank}
                 </p>

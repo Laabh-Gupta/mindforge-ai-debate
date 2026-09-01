@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { ArrowRight, Brain, Gauge, MessagesSquare, Sparkle, Target } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -83,6 +83,10 @@ const FAQS = [
 ];
 
 export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    throw redirect({ to: "/dashboard" });
+  },
+
   head: () => ({
     meta: [
       { title },

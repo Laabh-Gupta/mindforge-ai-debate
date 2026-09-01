@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { AppShell } from "@/components/mindforge/AppShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuthUser } from "@/hooks/use-auth-user";
 
 const title = "Leaderboard — MindForge";
 const description =
@@ -23,18 +24,20 @@ export const Route = createFileRoute("/leaderboard")({
 
 const ROWS = [
   { name: "Ishita R.", detail: "IIM Bangalore", xp: 8120 },
-  { name: "Aarav Mehta", detail: "You", xp: 4820 },
+  { name: "", detail: "You", xp: 4820 },
   { name: "Kabir S.", detail: "NLSIU", xp: 4610 },
   { name: "Meera P.", detail: "SRCC", xp: 4380 },
   { name: "Rohan T.", detail: "IIT Madras", xp: 3990 },
 ];
 
-function Board({ scope }: { scope: string }) {
+function Board({ scope, youName }: { scope: string; youName: string }) {
+  const rows = ROWS.map((r) => (r.detail === "You" ? { ...r, name: youName } : r));
+
   return (
     <ul className="mt-4 space-y-2">
-      {ROWS.map((r, i) => (
+      {rows.map((r, i) => (
         <li
-          key={r.name}
+          key={r.detail === "You" ? "you" : r.name}
           className={`glass flex items-center gap-4 rounded-2xl px-5 py-4 ${
             r.detail === "You" ? "border border-primary/40" : ""
           }`}
@@ -54,6 +57,9 @@ function Board({ scope }: { scope: string }) {
 }
 
 function LeaderboardPage() {
+  const { user } = useAuthUser();
+  const youName = user?.name ?? "Guest";
+
   return (
     <AppShell title="Leaderboard" subtitle="Rankings refresh every hour." width="wide">
       <Tabs defaultValue="friends">
@@ -66,7 +72,7 @@ function LeaderboardPage() {
         </TabsList>
         {["friends", "college", "global", "weekly", "monthly"].map((scope) => (
           <TabsContent key={scope} value={scope}>
-            <Board scope={scope} />
+            <Board scope={scope} youName={youName} />
           </TabsContent>
         ))}
       </Tabs>

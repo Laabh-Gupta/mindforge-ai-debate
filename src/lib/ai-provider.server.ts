@@ -4,7 +4,7 @@ import { createGroq } from "@ai-sdk/groq";
  * Chat model used for live debate/session turns (streaming).
  * Override with GROQ_CHAT_MODEL if you want to try a different Groq model.
  */
-export const CHAT_MODEL = process.env["GROQ_CHAT_MODEL"] || "llama-3.3-70b-versatile";
+export const CHAT_MODEL = process.env["GROQ_CHAT_MODEL"] || "openai/gpt-oss-120b";
 
 /**
  * Model used for structured JSON output (scoring, evaluations, generated

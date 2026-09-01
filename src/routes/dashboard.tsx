@@ -7,6 +7,7 @@ import { AppShell } from "@/components/mindforge/AppShell";
 import { StatCard } from "@/components/mindforge/StatCard";
 import { MODULE_NAV } from "@/lib/app-nav";
 import { profileUser, recentDebates } from "@/lib/mindforge-data";
+import { useAuthUser } from "@/hooks/use-auth-user";
 
 const title = "Dashboard — MindForge";
 const description =
@@ -26,11 +27,13 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const xpPct = Math.round((profileUser.xp / profileUser.nextRankXp) * 100);
+  const { user } = useAuthUser();
+  const firstName = user?.name.split(" ")[0] ?? "Guest";
 
   return (
     <AppShell
       width="wide"
-      title={`Welcome back, ${profileUser.name.split(" ")[0]}`}
+      title={`Welcome back, ${firstName}`}
       subtitle={`You've held your streak for ${profileUser.streak} days. Don't break it today.`}
       actions={
         <span className="glass flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold">

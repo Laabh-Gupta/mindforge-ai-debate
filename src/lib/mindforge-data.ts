@@ -157,7 +157,6 @@ export const achievements = [
 ];
 
 export const profileUser = {
-  name: "Arjun Mehta",
   handle: "@arjunthinks",
   rank: "Analyst III",
   xp: 4820,
