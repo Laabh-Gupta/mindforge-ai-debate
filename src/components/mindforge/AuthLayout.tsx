@@ -19,15 +19,17 @@ export function AuthLayout({
         <div className="mb-8 flex justify-center">
           <Logo />
         </div>
-        <div className="glass rounded-3xl p-7 sm:p-9">
+        <div className="mf-panel rounded-xl p-7 sm:p-9">
           <h1 className="font-display text-2xl font-bold">{title}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>
           <div className="mt-7">{children}</div>
         </div>
-        <p className="mt-6 text-center text-sm text-muted-foreground">{footer}</p>
+        <p className="mt-6 text-center text-sm text-muted-foreground [&_a]:underline [&_a]:underline-offset-4">
+          {footer}
+        </p>
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          <Link to="/" className="transition-colors hover:text-foreground">
-            ← Back to home
+          <Link to="/dashboard" className="transition-colors hover:text-foreground">
+            Continue as a guest
           </Link>
         </p>
       </div>

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { NoObjectGeneratedError, Output, generateText } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { STRUCTURED_MODEL, getGroqProvider } from "./ai-provider.server";
 

@@ -1,3 +1,4 @@
+import type { ReviewDetails } from "./review-details";
 export const EVALUATION_DIMENSIONS = [
   "criticalThinking",
   "communication",
@@ -39,6 +40,7 @@ export const DIMENSION_LABELS: Record<DimensionKey, string> = {
 export type SessionScores = Record<DimensionKey, number>;
 
 export type SessionEvaluation = {
+  details?: ReviewDetails;
   summary: string;
   scores: SessionScores;
   strengths: string[];
@@ -81,6 +83,11 @@ export type ThinkingSteps = {
   moveWhy: string;
   principle: string;
   nextMove: string;
+  evidence?: string;
+  assumptions?: string;
+  counterargument?: string;
+  openQuestion?: string;
+  fallacies?: string;
 };
 
 export const SESSION_KEY = "mindforge:last-session";

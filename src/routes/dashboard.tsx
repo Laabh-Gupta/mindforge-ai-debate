@@ -1,189 +1,198 @@
+import { dailyChallenge } from "@/lib/daily-challenge";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Flame, Trophy, Clock, Brain, Play, ArrowRight, Zap, Target } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { ArrowRight, ArrowUpRight, Play, Flame, Target, BookOpen } from "lucide-react";
 import { AppShell } from "@/components/mindforge/AppShell";
-import { StatCard } from "@/components/mindforge/StatCard";
-import { MODULE_NAV } from "@/lib/app-nav";
-import { profileUser, recentDebates } from "@/lib/mindforge-data";
+import { Button } from "@/components/ui/button";
+import { usePractice, useProgress } from "@/components/mindforge/PracticeProvider";
 import { useAuthUser } from "@/hooks/use-auth-user";
-
-const title = "Dashboard — MindForge";
-const description =
-  "Track your streak, XP, logic scores and recent debates, then jump into today's challenge.";
+import { MODULE_NAV } from "@/lib/app-nav";
+import { modePath } from "@/lib/practice-types";
+import { SessionHistory, WeeklyPractice } from "@/components/mindforge/ProgressViews";
+import { getMode } from "@/lib/training-modes";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "Dashboard | MindForge" }] }),
   component: Dashboard,
 });
-
 function Dashboard() {
-  const xpPct = Math.round((profileUser.xp / profileUser.nextRankXp) * 100);
   const { user } = useAuthUser();
-  const firstName = user?.name.split(" ")[0] ?? "Guest";
-
+  const { sessions, preferences, ready } = usePractice();
+  const p = useProgress();
+  const active = sessions.find((s) => s.status === "active");
+  const name = (user?.name ?? preferences.guestName).split(" ")[0];
+  const feedback = p.evaluated[0]?.evaluation;
+  const challenge = dailyChallenge();
+  const recommended = getMode(p.recommendedMode)!;
   return (
     <AppShell
       width="wide"
-      title={`Welcome back, ${firstName}`}
-      subtitle={`You've held your streak for ${profileUser.streak} days. Don't break it today.`}
+      title={name === "Guest" ? "Your practice starts here." : `Ready when you are, ${name}.`}
+      subtitle="A little practice. A clearer point of view."
       actions={
-        <span className="glass flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold">
-          <Flame className="h-4 w-4 text-warning" /> {profileUser.streak}
-        </span>
+        <Button asChild>
+          <Link to="/train">
+            Start a session <ArrowUpRight className="size-4" />
+          </Link>
+        </Button>
       }
     >
-      <>
-        <section className="glass rounded-3xl p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs tracking-widest text-muted-foreground uppercase">Daily goal</p>
-              <p className="mt-1 text-sm">2 of 3 sessions complete</p>
-            </div>
-            <span className="glass flex items-center gap-2 rounded-full px-3 py-1.5 text-sm">
-              <Target className="h-4 w-4 text-primary" /> 67%
-            </span>
+      <div className="grid grid-cols-2 gap-y-7 border-y border-border py-6 lg:grid-cols-4">
+        {[
+          { label: "Sessions completed", value: p.total, hint: `${p.debates} debates` },
+          {
+            label: "Communication",
+            value: p.communication ?? "Not rated",
+            hint: p.evaluated.length
+              ? "Average across your reviews"
+              : "Complete a session to get a score",
+          },
+          {
+            label: "Practice time",
+            value: `${(p.seconds / 3600).toFixed(1)} h`,
+            hint: `${Math.floor(p.seconds / 60)} minutes of practice`,
+          },
+          {
+            label: "Current streak",
+            value: `${p.streak} days`,
+            hint: `Personal best: ${p.bestStreak} days`,
+          },
+        ].map((stat, i) => (
+          <div
+            key={stat.label}
+            className={`min-w-0 ${i ? "lg:border-l lg:border-border lg:pl-7" : ""}`}
+          >
+            <p className="text-sm text-muted-foreground">{stat.label}</p>
+            <p className="mf-number mt-3 text-3xl font-medium sm:text-4xl">
+              {ready ? stat.value : "…"}
+            </p>
+            <p className="mt-3 text-xs text-muted-foreground">{stat.hint}</p>
           </div>
-          <Progress value={67} className="mt-4 h-2" />
+        ))}
+      </div>
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(260px,1fr)]">
+        <section className="mf-panel relative overflow-hidden p-6 sm:p-8">
+          <div className="flex items-center gap-2 text-sm text-primary">
+            <BookOpen className="size-4" />
+            {active ? "Pick up where you left off" : "Make room for practice"}
+          </div>
+          <h2 className="mt-5 max-w-lg text-2xl font-medium sm:text-3xl">
+            {active ? active.topic : "The next conversation is worth preparing for."}
+          </h2>
+          <p className="mt-4 max-w-md text-sm text-muted-foreground">
+            {active
+              ? `${active.modeName}. Your conversation and settings are saved.`
+              : "Choose a room, work through a real exchange, and leave with something specific to improve."}
+          </p>
+          <Button asChild className="mt-7">
+            <Link
+              to={active ? modePath(active.modeId) : "/interview"}
+              search={active ? { resume: active.id } : {}}
+            >
+              <Play className="size-4" />
+              {active ? "Resume last session" : "Practice an interview"}
+            </Link>
+          </Button>
+          <p className="mt-5 text-xs text-muted-foreground">
+            {user ? "Practice saved to your account" : "Guest practice is saved in this browser"}
+          </p>
         </section>
-
-        <section className="mt-5 grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-          <div className="glass rounded-3xl p-6 sm:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs tracking-widest text-muted-foreground uppercase">
-                  Current level
-                </p>
-                <p className="mt-1 font-display text-3xl font-bold">
-                  Level {profileUser.level} · {profileUser.rank}
-                </p>
+        <section className="mf-panel flex flex-col p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-medium">Your daily goal</h2>
+            <Target className="size-4 text-muted-foreground" />
+          </div>
+          <p className="mf-number mt-7 text-5xl font-medium">
+            {p.todaySessions}
+            <span className="ml-2 text-xl text-muted-foreground">/ {p.dailyGoal}</span>
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">Sessions completed today</p>
+          <div
+            className="mt-5 flex gap-1.5"
+            role="progressbar"
+            aria-label="Daily goal"
+            aria-valuenow={p.dailyPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            {Array.from({ length: p.dailyGoal }, (_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 flex-1 rounded-sm ${i < p.todaySessions ? "bg-primary" : "bg-secondary"}`}
+              />
+            ))}
+          </div>
+          <div className="mt-auto flex items-center gap-2 pt-7 text-sm text-muted-foreground">
+            <Flame className="size-4" />
+            {p.streak
+              ? `${p.streak}-day streak. Keep showing up.`
+              : "Your first session starts your streak."}
+          </div>
+        </section>
+      </div>
+      <section className="mt-10">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="text-lg font-medium">Find your room</h2>
+          <Link to="/train" className="text-sm text-muted-foreground hover:text-foreground">
+            All training modes <ArrowRight className="ml-1 inline size-4" />
+          </Link>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {MODULE_NAV.slice(0, 4).map((m) => (
+            <Link
+              key={m.to}
+              to={m.to}
+              className="group mf-panel p-5 transition-colors hover:border-primary/50"
+            >
+              <div className="flex justify-between">
+                <m.icon className="size-5 text-muted-foreground" strokeWidth={1.5} />
+                <ArrowUpRight className="size-4 text-muted-foreground group-hover:text-primary" />
               </div>
-              <span className="glass flex items-center gap-2 rounded-full px-3 py-1.5 text-sm">
-                <Zap className="h-4 w-4 text-primary" /> {profileUser.xp.toLocaleString()} XP
-              </span>
-            </div>
-            <Progress value={xpPct} className="mt-6 h-2" />
-            <p className="mt-2 text-xs text-muted-foreground">
-              {profileUser.nextRankXp - profileUser.xp} XP to the next rank
-            </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Button asChild className="h-11 flex-1 bg-gradient-brand text-primary-foreground">
-                <Link to="/debate">
-                  <Play className="mr-1 h-4 w-4" /> Continue session
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-11 flex-1">
-                <Link to="/train">Quick start</Link>
-              </Button>
-            </div>
-          </div>
-
-          <div className="glass hover-lift rounded-3xl p-6 sm:p-8">
-            <p className="text-xs tracking-widest text-muted-foreground uppercase">
-              Today's challenge
-            </p>
-            <h2 className="mt-3 text-lg font-semibold">
-              "Should AI-generated content be labelled by law?"
-            </h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Hard difficulty · 10 minutes · +250 XP. You'll argue against a policy-heavy opponent.
-            </p>
-            <Button asChild variant="outline" className="mt-6 h-11 w-full">
-              <Link to="/debate">
-                Take the challenge <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+              <h3 className="mt-5 text-sm font-medium">{m.label}</h3>
+              <p className="mt-2 text-xs text-muted-foreground">{m.hint}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(260px,1fr)]">
+        <WeeklyPractice />
+        <section className="mf-panel p-6">
+          <p className="mf-label">Next focus</p>
+          <h2 className="mt-3 text-xl font-medium">{p.focusLabel}</h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {feedback?.suggestions[0] ??
+              "Start with one session. Your review will help you choose what to work on next."}
+          </p>
+          <Link
+            to={modePath(recommended.id)}
+            className="mt-6 inline-flex items-center gap-2 text-sm text-primary"
+          >
+            {recommended.name}
+            <ArrowRight className="size-4" />
+          </Link>
         </section>
-
-        <section className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard icon={Brain} label="Total Debates" value="62" hint="+4 this week" />
-          <StatCard icon={Trophy} label="Communication Score" value="81" hint="+6 vs last month" />
-          <StatCard icon={Flame} label="Current Streak" value="12 days" hint="Best: 19 days" />
-          <StatCard icon={Clock} label="Hours Practiced" value="27.5" hint="~35 min/day" />
-        </section>
-
-        <section className="glass mt-5 rounded-3xl p-6">
-          <h2 className="font-display text-lg font-bold">Weekly progress</h2>
-          <div className="mt-5 flex h-28 items-end gap-3">
-            {[62, 48, 74, 81, 56, 90, 68].map((v, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-2">
-                <div className="w-full rounded-t-lg bg-gradient-brand" style={{ height: `${v}%` }} />
-                <span className="text-[11px] text-muted-foreground">
-                  {["M", "T", "W", "T", "F", "S", "S"][i]}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mt-10">
-          <h2 className="font-display text-xl font-bold">Quick start</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {MODULE_NAV.slice(0, 4).map((m) => (
-              <Link key={m.to} to={m.to} className="glass hover-lift rounded-2xl p-5">
-                <m.icon className="h-5 w-5 text-primary" />
-                <p className="mt-3 text-sm font-semibold">{m.label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{m.hint}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section className="mt-10 grid gap-5 lg:grid-cols-2">
-          <div className="glass rounded-3xl p-6">
-            <h2 className="font-display text-lg font-bold">Recommended practice</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Listening is your weakest dimension this week. A group discussion round will stretch
-              it the most.
-            </p>
-            <Button asChild variant="outline" className="mt-5 h-11">
-              <Link to="/group-discussion">
-                Start a GD <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          <div className="glass rounded-3xl p-6">
-            <h2 className="font-display text-lg font-bold">Recent feedback</h2>
-            <ul className="mt-3 space-y-3 text-sm text-muted-foreground">
-              <li>“Strong structure, but your evidence was asserted rather than sourced.”</li>
-              <li>“You conceded a point you didn't need to — hold your anchor longer.”</li>
-              <li>“Excellent opening frame; the close trailed off.”</li>
-            </ul>
-          </div>
-        </section>
-
-        <section className="mt-10">
-          <h2 className="font-display text-xl font-bold">Recent activity</h2>
-          <div className="mt-4 grid gap-3">
-            {recentDebates.map((d) => (
-              <Link
-                key={d.topic}
-                to="/result"
-                className="glass hover-lift grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl px-5 py-4"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{d.topic}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {d.date} · {d.turns} turns
-                  </p>
-                </div>
-                <span className="shrink-0 rounded-full bg-secondary px-3 py-1 font-display text-sm font-bold">
-                  {d.score}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      </>
+      </div>
+      <section className="mt-8 flex flex-wrap items-center justify-between gap-5 border-y border-border py-6">
+        <div className="max-w-2xl">
+          <p className="mf-label">Today’s challenge</p>
+          <h2 className="mt-2 font-medium">{challenge.topic}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{challenge.task}</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link to={modePath(challenge.mode)} search={{ topic: challenge.topic }}>
+            Try this challenge
+            <ArrowUpRight className="size-4" />
+          </Link>
+        </Button>
+      </section>
+      <section className="mt-10">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-medium">Recent practice</h2>
+          <Link to="/profile" className="text-sm text-muted-foreground">
+            View history
+          </Link>
+        </div>
+        <SessionHistory limit={5} />
+      </section>
     </AppShell>
   );
 }

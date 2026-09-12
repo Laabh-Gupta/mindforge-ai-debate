@@ -1,3 +1,5 @@
+import { useFlushSession } from "@/hooks/use-flush-session";
+import { practiceSearch } from "@/lib/practice-types";
 import { useChat } from "@ai-sdk/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -6,7 +8,6 @@ import {
   ClipboardList,
   Flag,
   Hand,
-  Mic,
   SendHorizontal,
   Sparkle,
   Timer as TimerIcon,
@@ -20,7 +21,11 @@ import { parseSpeakerTurns, speakerColor } from "@/components/mindforge/SpeakerT
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { SESSION_KEY, type StoredSession } from "@/lib/evaluation-shared";
+import { usePractice } from "@/components/mindforge/PracticeProvider";
+import { VoiceRecorder } from "@/components/mindforge/VoiceRecorder";
+import { useSessionClock } from "@/hooks/use-session-clock";
+import { adaptiveDifficulty } from "@/lib/gamification";
+import type { PracticeSession } from "@/lib/practice-types";
 import { defaultProfileIdForMode, loadSelectedProfileId } from "@/lib/evaluation-profiles";
 import { GD_CAST, GD_MODERATOR, GD_PARTICIPANTS, OPENING_TRIGGER } from "@/lib/session-prompt";
 import { summarizeGroupDiscussion } from "@/lib/session.functions";
@@ -30,6 +35,7 @@ const DESCRIPTION =
   "Join a live MBA-style group discussion room with an AI moderator and five opinionated participants who argue with each other. Speak, get a real transcript, moderator feedback and a contribution summary.";
 
 export const Route = createFileRoute("/group-discussion")({
+  validateSearch: practiceSearch,
   head: () => ({
     meta: [
       { title: TITLE },
@@ -108,7 +114,10 @@ function initialsOf(name: string) {
 /** Match a spoken name back onto the fixed cast so cards stay stable. */
 function resolveCast(raw: string | null) {
   if (!raw) return null;
-  const bare = raw.replace(/\s*\(.*\)/, "").trim().toLowerCase();
+  const bare = raw
+    .replace(/\s*\(.*\)/, "")
+    .trim()
+    .toLowerCase();
   return (
     GD_CAST.find((p) => p.name.toLowerCase() === bare) ??
     GD_CAST.find(
@@ -126,13 +135,30 @@ const IMPACT_STYLES: Record<Wrap["contributions"][number]["impact"], string> = {
 
 function GroupDiscussionPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
+  const { sessions, save, ready, owner, preferences } = usePractice();
+  const [meta, setMeta] = useState<{ id: string; startedAt: number } | null>(null);
+  const finished = useRef(false);
+  const snapshot = useRef<PracticeSession | null>(null);
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  const resumable = sessions.find(
+    (s) =>
+      s.modeId === "group-discussion" &&
+      s.status === "active" &&
+      (!search.resume || s.id === search.resume),
+  );
   const wrapUp = useServerFn(summarizeGroupDiscussion);
   const [phase, setPhase] = useState<"setup" | "live">("setup");
-  const [topicInput, setTopicInput] = useState("");
+  const [topicInput, setTopicInput] = useState(search.topic ?? "");
+  const [difficulty, setDifficulty] = useState<"beginner" | "intermediate" | "advanced">(
+    "beginner",
+  );
+  const [sending, setSending] = useState(false);
   const [topic, setTopic] = useState("");
   const [format, setFormat] = useState<string>(FORMATS[0].id);
   const [draft, setDraft] = useState("");
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed] = useSessionClock(phase === "live");
   const [wrap, setWrap] = useState<Wrap | null>(null);
   const [wrapping, setWrapping] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -143,18 +169,30 @@ function GroupDiscussionPage() {
     () =>
       new DefaultChatTransport({
         api: "/api/session",
-        body: () => ({ topic, modeId: "group-discussion", variant: format }),
+        body: () => ({
+          topic,
+          modeId: "group-discussion",
+          variant: format,
+          language: preferences.language,
+          difficulty,
+        }),
       }),
-    [topic, format],
+    [topic, format, preferences.language, difficulty],
   );
 
-  const { messages, sendMessage, status, error } = useChat({
-    id: `gd:${topic || "idle"}`,
+  const { messages, setMessages, sendMessage, regenerate, stop, status, error } = useChat({
+    id: `gd:${owner}`,
     transport,
     onError: (err) => toast.error(err.message || "The room could not respond. Please try again."),
   });
 
-  const busy = status === "submitted" || status === "streaming";
+  const request = (text: string) => {
+    setSending(true);
+    void sendMessage({ text })
+      .catch(() => undefined)
+      .finally(() => setSending(false));
+  };
+  const busy = sending || status === "submitted" || status === "streaming";
   const visible = messages.filter((m) => messageText(m) !== OPENING_TRIGGER);
   const roomThinking = busy && !(status === "streaming" && visible.at(-1)?.role === "assistant");
 
@@ -219,14 +257,8 @@ function GroupDiscussionPage() {
   }, [messages, roomThinking]);
 
   useEffect(() => {
-    if (phase !== "live") return;
-    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => clearInterval(t);
-  }, [phase]);
-
-  useEffect(() => {
     if (!topic || phase !== "live" || messages.length > 0) return;
-    void sendMessage({ text: OPENING_TRIGGER });
+    request(OPENING_TRIGGER);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topic, phase]);
 
@@ -236,8 +268,16 @@ function GroupDiscussionPage() {
 
   function start(value: string) {
     const chosen = value.trim();
-    if (!chosen) return;
+    if (!chosen || !ready) return;
+    finished.current = false;
+    setMeta({ id: crypto.randomUUID(), startedAt: Date.now() });
+    setMessages([]);
     setTopic(chosen);
+    setDifficulty(
+      preferences.difficulty === "adaptive"
+        ? adaptiveDifficulty(sessions, "group-discussion")
+        : preferences.difficulty,
+    );
     setElapsed(0);
     setWrap(null);
     setPhase("live");
@@ -248,14 +288,14 @@ function GroupDiscussionPage() {
     const text = draft.trim();
     if (!text || busy) return;
     setDraft("");
-    void sendMessage({ text });
+    request(text);
   }
 
   function letRoomRun() {
     if (busy) return;
-    void sendMessage({
-      text: "(I stay silent and listen — let the other participants continue the discussion among themselves.)",
-    });
+    request(
+      "(I stay silent and listen — let the other participants continue the discussion among themselves.)",
+    );
   }
 
   function transcriptText() {
@@ -280,37 +320,78 @@ function GroupDiscussionPage() {
       }
       setWrap(result as Wrap);
       setTimeout(() => wrapRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    } catch {
+      toast.error(
+        "The moderator could not close this session. Your discussion is saved; try again.",
+      );
     } finally {
       setWrapping(false);
     }
   }
 
+  const current: PracticeSession | null =
+    meta && phase === "live"
+      ? {
+          ...meta,
+          modeId: "group-discussion",
+          modeName: "Group Discussion Simulator",
+          topic,
+          variant: format,
+          profileId: loadSelectedProfileId(defaultProfileIdForMode("group-discussion")),
+          turns: transcript.map((l) => ({
+            speaker: l.isUser ? "You" : `${l.speaker} (${l.role})`,
+            role: l.isUser ? ("user" as const) : ("ai" as const),
+            content: l.content,
+          })),
+          messages,
+          durationSeconds: elapsed,
+          difficulty,
+          status: "active",
+          updatedAt: Date.now(),
+          draft,
+          extra: { wrap },
+        }
+      : null;
+  snapshot.current = current;
+  useEffect(() => {
+    if (!current || finished.current) return;
+    const timer = setTimeout(() => {
+      if (snapshot.current && !finished.current) saveRef.current(snapshot.current);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [messages, elapsed, draft, wrap]);
+  useFlushSession(snapshot, finished, saveRef);
+  function resume() {
+    if (!resumable) return;
+    finished.current = false;
+    setMeta({ id: resumable.id, startedAt: resumable.startedAt });
+    setDifficulty(resumable.difficulty === "adaptive" ? "beginner" : resumable.difficulty);
+    setTopic(resumable.topic);
+    setFormat(resumable.variant ?? FORMATS[0].id);
+    setDraft(resumable.draft ?? "");
+    setElapsed(resumable.durationSeconds);
+    setMessages(resumable.messages);
+    setWrap((resumable.extra?.["wrap"] as Wrap) ?? null);
+    setPhase("live");
+  }
   function finish() {
-    const session: StoredSession = {
-      modeId: "group-discussion",
-      modeName: "Group Discussion Simulator",
-      topic,
-      variant: format,
-      profileId: loadSelectedProfileId(defaultProfileIdForMode("group-discussion")),
-      turns: transcript.map((l) => ({
-        speaker: l.isUser ? "You" : `${l.speaker} (${l.role})`,
-        role: l.isUser ? ("user" as const) : ("ai" as const),
-        content: l.content,
-      })),
-    };
-    try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    } catch {
-      // storage unavailable — the evaluation page shows an empty state
-    }
-    void navigate({ to: "/evaluation" });
+    if (!current || busy || yourWords < 20) return;
+    finished.current = true;
+    save({ ...current, status: "completed", completedAt: Date.now(), updatedAt: Date.now() });
+    void navigate({ to: "/evaluation", search: { session: current.id } });
   }
 
   return (
     <AppShellRaw>
-      <main className="mx-auto max-w-6xl px-5 pt-8">
+      <main id="main-content" className="mx-auto max-w-6xl px-5 pt-8 pb-16">
         {phase === "setup" ? (
           <section className="animate-rise">
+            {resumable && (
+              <div className="mf-panel mb-6 flex flex-wrap items-center justify-between gap-3 p-5">
+                <p className="text-sm">Resume: {resumable.topic}</p>
+                <Button onClick={resume}>Resume session</Button>
+              </div>
+            )}
             <p className="text-xs tracking-widest text-primary uppercase">
               Moderator + 5 AI participants
             </p>
@@ -354,10 +435,12 @@ function GroupDiscussionPage() {
                   className="glass mt-6 flex flex-col gap-3 rounded-2xl p-4 sm:flex-row"
                 >
                   <Input
+                    disabled={!ready}
                     value={topicInput}
                     onChange={(e) => setTopicInput(e.target.value)}
                     placeholder="e.g. Should India privatise its public sector banks?"
                     aria-label="GD topic"
+                    maxLength={3000}
                     className="h-12 flex-1 bg-secondary/40"
                   />
                   <Button
@@ -418,6 +501,12 @@ function GroupDiscussionPage() {
           </section>
         ) : (
           <section className="animate-rise">
+            {resumable && (
+              <div className="mf-panel mb-6 flex flex-wrap items-center justify-between gap-3 p-5">
+                <p className="text-sm">Resume: {resumable.topic}</p>
+                <Button onClick={resume}>Resume session</Button>
+              </div>
+            )}
             <div className="glass flex flex-wrap items-center gap-3 rounded-2xl px-5 py-4">
               <div className="min-w-0 flex-1">
                 <p className="text-xs tracking-widest text-muted-foreground uppercase">
@@ -504,6 +593,8 @@ function GroupDiscussionPage() {
 
                 <form onSubmit={send} className="glass sticky bottom-4 mt-6 rounded-2xl p-4">
                   <Textarea
+                    aria-label="Your contribution"
+                    maxLength={12000}
                     ref={composerRef}
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
@@ -513,15 +604,6 @@ function GroupDiscussionPage() {
                   />
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        title="Voice input (coming soon)"
-                        disabled
-                      >
-                        <Mic className="h-4 w-4" />
-                      </Button>
                       <Button
                         type="button"
                         variant="outline"
@@ -542,6 +624,30 @@ function GroupDiscussionPage() {
                   </div>
                 </form>
 
+                <div className="mt-4">
+                  <VoiceRecorder />
+                </div>
+                {busy && (
+                  <Button variant="outline" className="mt-3" onClick={() => void stop()}>
+                    Stop response
+                  </Button>
+                )}
+                {error && (
+                  <Button
+                    variant="outline"
+                    className="mt-3"
+                    onClick={() => {
+                      void regenerate().catch(() => undefined);
+                    }}
+                  >
+                    Retry response
+                  </Button>
+                )}
+                {yourWords < 20 && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Contribute at least 20 words before finishing ({yourWords}/20).
+                  </p>
+                )}
                 {transcript.length > 1 && (
                   <div className="mt-4 flex flex-wrap justify-end gap-3">
                     <Button variant="outline" onClick={closeDiscussion} disabled={busy || wrapping}>
@@ -551,7 +657,7 @@ function GroupDiscussionPage() {
                     <Button
                       className="h-11 bg-gradient-brand px-6 text-primary-foreground"
                       onClick={finish}
-                      disabled={busy}
+                      disabled={busy || yourWords < 20}
                     >
                       <Flag className="mr-1 h-4 w-4" /> Finish &amp; get evaluation
                     </Button>
@@ -595,9 +701,7 @@ function GroupDiscussionPage() {
                             </span>
                             <div className="min-w-0 flex-1">
                               <p className="flex flex-wrap items-center gap-2">
-                                <span
-                                  className={`text-sm font-semibold ${speakerColor(c.name)}`}
-                                >
+                                <span className={`text-sm font-semibold ${speakerColor(c.name)}`}>
                                   {c.name}
                                 </span>
                                 <span className="text-[11px] text-muted-foreground">{c.role}</span>
@@ -624,9 +728,7 @@ function GroupDiscussionPage() {
               </div>
 
               <aside className="glass h-fit rounded-2xl p-5 lg:sticky lg:top-24">
-                <p className="text-xs tracking-widest text-muted-foreground uppercase">
-                  The room
-                </p>
+                <p className="text-xs tracking-widest text-muted-foreground uppercase">The room</p>
                 <ul className="mt-4 space-y-3">
                   {GD_CAST.map((p) => {
                     const count = counts.get(p.name) ?? 0;

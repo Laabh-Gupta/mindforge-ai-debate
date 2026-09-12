@@ -1,3 +1,4 @@
+import { practiceSearch } from "@/lib/practice-types";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { ChipRow, ModulePage } from "@/components/mindforge/ModulePage";
@@ -19,6 +20,7 @@ const TYPES = [
 ] as const;
 
 export const Route = createFileRoute("/interview")({
+  validateSearch: practiceSearch,
   head: () => ({
     meta: [
       { title },

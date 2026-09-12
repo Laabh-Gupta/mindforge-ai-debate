@@ -1,3 +1,5 @@
+-- LEGACY TABLE ONLY. Current deployments must run migrations/202609110001_practice.sql.
+-- Retained for historical reference; it is not the complete application schema.
 -- MindForge: session history table.
 -- Run this once in your Supabase project's SQL editor (Project → SQL Editor → New query).
 

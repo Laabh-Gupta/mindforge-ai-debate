@@ -1,11 +1,20 @@
 import { Button } from "@/components/ui/button";
 
-export function GoogleButton({ label, onClick }: { label: string; onClick?: () => void }) {
+export function GoogleButton({
+  label,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
   return (
     <Button
       type="button"
       variant="outline"
       onClick={onClick}
+      disabled={disabled}
       className="h-11 w-full gap-3 border-border bg-secondary/40 hover:bg-secondary"
     >
       <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">

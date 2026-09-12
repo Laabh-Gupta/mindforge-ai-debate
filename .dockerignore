@@ -1,0 +1,22 @@
+node_modules
+.output
+dist
+.git
+.env
+.env.*
+!.env.example
+.agents
+.codex
+test-results
+playwright-report
+output
+tmp
+Summary.txt
+*.log
+
+# Private account and session storage
+data/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*

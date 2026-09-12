@@ -1,3 +1,4 @@
+import { practiceSearch } from "@/lib/practice-types";
 import { createFileRoute } from "@tanstack/react-router";
 import { Mic, Timer, Users } from "lucide-react";
 
@@ -8,6 +9,7 @@ const description =
   "Deliver a full speech and get it dissected for structure, clarity, persuasion, vocabulary and audience engagement.";
 
 export const Route = createFileRoute("/public-speaking")({
+  validateSearch: practiceSearch,
   head: () => ({
     meta: [
       { title },

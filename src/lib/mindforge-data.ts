@@ -106,7 +106,12 @@ export const recentDebates = [
   { topic: "Should AI-generated content be labelled by law?", score: 84, date: "Today", turns: 12 },
   { topic: "Is remote work reducing career growth?", score: 71, date: "Yesterday", turns: 9 },
   { topic: "Should crypto be regulated as a security?", score: 78, date: "2 days ago", turns: 14 },
-  { topic: "Is nuclear energy the fastest path to net zero?", score: 66, date: "4 days ago", turns: 8 },
+  {
+    topic: "Is nuclear energy the fastest path to net zero?",
+    score: 66,
+    date: "4 days ago",
+    turns: 8,
+  },
 ];
 
 export const scoreBreakdown = [
@@ -130,7 +135,10 @@ export const resultInsights = {
     "Closing statement repeated the opening rather than advancing it.",
   ],
   fallacies: [
-    { name: "Hasty Generalisation", detail: "One company's outcome used to describe an entire sector." },
+    {
+      name: "Hasty Generalisation",
+      detail: "One company's outcome used to describe an entire sector.",
+    },
     { name: "False Dilemma", detail: "Framed the choice as regulation or innovation, never both." },
     { name: "Appeal to Authority", detail: "Cited a name without citing the underlying evidence." },
   ],

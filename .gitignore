@@ -69,3 +69,21 @@ dist-ssr
 
 
 *.zip
+
+# Local tooling and verification artifacts
+.agents/
+.codex/
+.sites-runtime/
+test-results/
+playwright-report/
+output/
+tmp/
+.env.*
+!.env.example
+
+# Private account and session storage
+data/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*

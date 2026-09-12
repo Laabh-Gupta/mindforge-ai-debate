@@ -16,6 +16,8 @@ const CAUSE_DEPTH_LIMIT = 5;
 const DESCRIPTION_LENGTH_LIMIT = 8_000;
 
 export function describeError(error: unknown): string {
+  if (process.env["NODE_ENV"] === "production")
+    return error instanceof Error ? error.name + describeStatus(error) : "Unhandled server failure";
   const parts: string[] = [];
   let current: unknown = error;
   for (let depth = 0; depth < CAUSE_DEPTH_LIMIT && current != null; depth++) {

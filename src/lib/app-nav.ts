@@ -40,11 +40,26 @@ export const MODULE_NAV = [
     icon: Briefcase,
     hint: "HR, MBA, UPSC, consulting",
   },
-  { to: "/public-speaking", label: "Public Speaking", icon: Mic2, hint: "Deliver and get dissected" },
+  {
+    to: "/public-speaking",
+    label: "Public Speaking",
+    icon: Mic2,
+    hint: "Deliver and get dissected",
+  },
   { to: "/extempore", label: "Extempore", icon: Timer, hint: "Surprise topic, live clock" },
   { to: "/negotiation", label: "Negotiation", icon: Handshake, hint: "Salary, investors, vendors" },
-  { to: "/case-discussion", label: "Case Discussion", icon: FileSearch, hint: "Business & policy cases" },
-  { to: "/simulation", label: "Real-World Simulation", icon: Drama, hint: "Shark Tank, UN, boardroom" },
+  {
+    to: "/case-discussion",
+    label: "Case Discussion",
+    icon: FileSearch,
+    hint: "Business & policy cases",
+  },
+  {
+    to: "/simulation",
+    label: "Real-World Simulation",
+    icon: Drama,
+    hint: "Shark Tank, UN, boardroom",
+  },
   { to: "/observer", label: "Observer Mode", icon: Eye, hint: "Watch, then judge" },
 ] as const satisfies readonly NavItem[];
 

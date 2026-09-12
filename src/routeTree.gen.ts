@@ -27,11 +27,13 @@ import { Route as ObserverRouteImport } from './routes/observer'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PublicSpeakingRouteImport } from './routes/public-speaking'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ResultRouteImport } from './routes/result'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SimulationRouteImport } from './routes/simulation'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiSessionRouteImport } from './routes/api/session'
 import { Route as TrainIndexRouteImport } from './routes/train.index'
 import { Route as TrainModeRouteImport } from './routes/train.$mode'
@@ -126,6 +128,11 @@ const PublicSpeakingRoute = PublicSpeakingRouteImport.update({
   path: '/public-speaking',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResultRoute = ResultRouteImport.update({
   id: '/result',
   path: '/result',
@@ -149,6 +156,11 @@ const SimulationRoute = SimulationRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSessionRoute = ApiSessionRouteImport.update({
@@ -186,11 +198,13 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/public-speaking': typeof PublicSpeakingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/result': typeof ResultRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/simulation': typeof SimulationRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/session': typeof ApiSessionRoute
   '/train/$mode': typeof TrainModeRoute
   '/train/': typeof TrainIndexRoute
@@ -214,11 +228,13 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/public-speaking': typeof PublicSpeakingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/result': typeof ResultRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/simulation': typeof SimulationRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/session': typeof ApiSessionRoute
   '/train/$mode': typeof TrainModeRoute
   '/train': typeof TrainIndexRoute
@@ -243,11 +259,13 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/public-speaking': typeof PublicSpeakingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/result': typeof ResultRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/simulation': typeof SimulationRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/session': typeof ApiSessionRoute
   '/train/$mode': typeof TrainModeRoute
   '/train/': typeof TrainIndexRoute
@@ -273,11 +291,13 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/profile'
     | '/public-speaking'
+    | '/reset-password'
     | '/result'
     | '/settings'
     | '/signup'
     | '/simulation'
     | '/api/chat'
+    | '/api/health'
     | '/api/session'
     | '/train/$mode'
     | '/train/'
@@ -301,11 +321,13 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/profile'
     | '/public-speaking'
+    | '/reset-password'
     | '/result'
     | '/settings'
     | '/signup'
     | '/simulation'
     | '/api/chat'
+    | '/api/health'
     | '/api/session'
     | '/train/$mode'
     | '/train'
@@ -329,11 +351,13 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/profile'
     | '/public-speaking'
+    | '/reset-password'
     | '/result'
     | '/settings'
     | '/signup'
     | '/simulation'
     | '/api/chat'
+    | '/api/health'
     | '/api/session'
     | '/train/$mode'
     | '/train/'
@@ -358,11 +382,13 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ProfileRoute: typeof ProfileRoute
   PublicSpeakingRoute: typeof PublicSpeakingRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ResultRoute: typeof ResultRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   SimulationRoute: typeof SimulationRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   ApiSessionRoute: typeof ApiSessionRoute
   TrainModeRoute: typeof TrainModeRoute
   TrainIndexRoute: typeof TrainIndexRoute
@@ -496,6 +522,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicSpeakingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/result': {
       id: '/result'
       path: '/result'
@@ -529,6 +562,13 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/session': {
@@ -574,11 +614,13 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ProfileRoute: ProfileRoute,
   PublicSpeakingRoute: PublicSpeakingRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ResultRoute: ResultRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   SimulationRoute: SimulationRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiHealthRoute: ApiHealthRoute,
   ApiSessionRoute: ApiSessionRoute,
   TrainModeRoute: TrainModeRoute,
   TrainIndexRoute: TrainIndexRoute,
