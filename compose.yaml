@@ -1,16 +1,10 @@
 services:
-  mindforge:
-    build: .
-    env_file: .env
-    environment:
-      NODE_ENV: production
-      HOST: 0.0.0.0
-      PORT: 3000
-      DATABASE_PATH: /app/data/mindforge.sqlite
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: backend/.env
     ports:
-      - "3000:3000"
-    volumes:
-      - mindforge-data:/app/data
+      - "4000:4000"
     restart: unless-stopped
-volumes:
-  mindforge-data:
+# All persistent data lives in the configured Supabase PostgreSQL database.

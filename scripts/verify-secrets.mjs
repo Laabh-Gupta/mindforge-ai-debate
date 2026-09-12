@@ -5,7 +5,8 @@ const names = [
   "AUTH_SECRET",
   "SESSION_SECRET",
   "GOOGLE_CLIENT_SECRET",
-  "SMTP_PASSWORD",
+  "DATABASE_URL",
+  "RESEND_API_KEY",
   "UPSTASH_REDIS_REST_TOKEN",
 ];
 const configured = names.filter((name) => process.env[name]?.length >= 8);
@@ -18,7 +19,7 @@ const files = execFileSync(
   .filter(Boolean);
 const leaks = [];
 for (const file of files) {
-  if (/^\.env(?:$|\.)/.test(file) && file !== ".env.example") {
+  if (/(?:^|\/)\.env(?:$|\.)/.test(file) && !file.endsWith(".env.example")) {
     leaks.push({ file, issue: "Environment file is tracked or not ignored" });
     continue;
   }

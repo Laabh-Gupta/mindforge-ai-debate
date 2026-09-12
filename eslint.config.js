@@ -17,7 +17,9 @@ export default tseslint.config(
       ".agents",
       ".codex",
       ".sites-runtime",
-      "src/routeTree.gen.ts",
+      "frontend/src/routeTree.gen.ts",
+      "frontend/dist/**",
+      "backend/dist/**",
     ],
   },
   {

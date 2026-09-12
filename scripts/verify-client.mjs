@@ -13,11 +13,12 @@ const secrets = [
   "AUTH_SECRET",
   "SESSION_SECRET",
   "GOOGLE_CLIENT_SECRET",
-  "SMTP_PASSWORD",
+  "RESEND_API_KEY",
+  "DATABASE_URL",
   "UPSTASH_REDIS_REST_TOKEN",
 ].filter((k) => process.env[k]);
 const leaks = [];
-for (const file of await files(".output/public")) {
+for (const file of await files("frontend/dist")) {
   if (!/\.(js|html|css|map)$/.test(file)) continue;
   const text = await readFile(file, "utf8");
   for (const key of secrets) if (text.includes(process.env[key])) leaks.push({ file, key });

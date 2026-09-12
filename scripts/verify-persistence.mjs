@@ -1,24 +1,25 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp } from "node:fs/promises";
+import { testDatabase } from "./test-database.mjs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import assert from "node:assert/strict";
 
 const base = "http://127.0.0.1:3103";
-const dir = await mkdtemp(join(tmpdir(), "mindforge-restart-"));
+const database = await testDatabase();
 let server;
 async function start() {
-  server = spawn(process.execPath, [".output/server/index.mjs"], {
+  server = spawn(process.execPath, ["backend/dist/index.mjs"], {
     windowsHide: true,
     stdio: "ignore",
     env: {
       ...process.env,
       PORT: "3103",
       HOST: "127.0.0.1",
-      NODE_ENV: "production",
-      APP_ORIGIN: base,
-      DATABASE_PATH: join(dir, "test.sqlite"),
+      NODE_ENV: "test",
+      FRONTEND_ORIGIN: base,
+      DATABASE_URL: database.url,
+      PG_POOL_MAX: "1",
       AUTH_SECRET: "persistence-test-auth-secret-more-than-32-characters",
       SESSION_SECRET: "persistence-test-visitor-secret-more-than-32-characters",
       GROQ_API_KEY: "",
@@ -53,7 +54,7 @@ try {
   await start();
   const signup = await request("/api/auth/sign-up/email", {
     name: "Restart Check",
-    email: "restart@example.test",
+    email: "restart-" + crypto.randomUUID() + "@example.test",
     password: "A temporary restart test passphrase!",
   });
   assert.equal(signup.status, 200);
@@ -91,4 +92,5 @@ try {
   );
 } finally {
   await stop();
+  await database.close();
 }

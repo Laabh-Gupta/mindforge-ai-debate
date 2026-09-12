@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { EVALUATION_DIMENSIONS } from "../../src/lib/evaluation-shared";
+import { EVALUATION_DIMENSIONS } from "../../frontend/src/lib/evaluation-shared";
 const id = "40000000-0000-4000-8000-000000000001";
 const scores = Object.fromEntries(EVALUATION_DIMENSIONS.map((k, i) => [k, 40 + i * 3]));
 const completed = {

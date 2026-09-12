@@ -1,18 +1,46 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
-//     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
-//     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-
-const nitro = { compressPublicAssets: true, preset: process.env["NITRO_PRESET"] || "node-server" };
-
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import { fileURLToPath } from "node:url";
 export default defineConfig({
-  nitro,
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
+  root: "frontend",
+  plugins: [
+    tanstackRouter({
+      target: "react",
+      routesDirectory: "./src/routes",
+      generatedRouteTree: "./src/routeTree.gen.ts",
+      autoCodeSplitting: true,
+    }),
+    react(),
+    tailwindcss(),
+  ],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./frontend/src", import.meta.url)),
+      "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
+    },
   },
+  server: {
+    host: "127.0.0.1",
+    port: 3001,
+    strictPort: true,
+    headers: { "X-Content-Type-Options": "nosniff" },
+    proxy: {
+      "/api": {
+        target: process.env["API_PROXY_TARGET"] || "http://127.0.0.1:4000",
+        changeOrigin: false,
+      },
+    },
+  },
+  preview: {
+    headers: { "X-Content-Type-Options": "nosniff" },
+    proxy: {
+      "/api": {
+        target: process.env["API_PROXY_TARGET"] || "http://127.0.0.1:4000",
+        changeOrigin: false,
+      },
+    },
+  },
+  build: { outDir: "dist", sourcemap: false },
 });

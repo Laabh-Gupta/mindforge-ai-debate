@@ -4,17 +4,24 @@ import {
   calendarDay,
   adaptiveDifficulty,
   getAchievements,
-} from "../../src/lib/gamification";
-import { canComplete, type PracticeSession } from "../../src/lib/practice-types";
+} from "../../frontend/src/lib/gamification";
+import { canComplete, type PracticeSession } from "../../frontend/src/lib/practice-types";
 import {
   applyProfile,
   BALANCED_PROFILE,
   makeCustomProfile,
-} from "../../src/lib/evaluation-profiles";
-import { EVALUATION_DIMENSIONS, type SessionScores } from "../../src/lib/evaluation-shared";
-import { ChatInput } from "../../src/lib/ai-request";
-import { mergeSessions, PracticeSchema, migrateLegacyRecords } from "../../src/lib/practice-store";
-import { incrementLocal } from "../../src/lib/request-security.server";
+} from "../../frontend/src/lib/evaluation-profiles";
+import {
+  EVALUATION_DIMENSIONS,
+  type SessionScores,
+} from "../../frontend/src/lib/evaluation-shared";
+import { ChatInput } from "../../backend/src/lib/ai-request";
+import {
+  mergeSessions,
+  PracticeSchema,
+  migrateLegacyRecords,
+} from "../../frontend/src/lib/practice-store";
+
 const now = new Date(2026, 8, 11, 12).getTime();
 const scores = Object.fromEntries(EVALUATION_DIMENSIONS.map((k) => [k, 70])) as SessionScores;
 function session(daysAgo = 0): PracticeSession {
@@ -155,13 +162,6 @@ describe("public AI boundary", () => {
   });
   test("rejects excessive input", () =>
     expect(ChatInput.safeParse({ ...valid, topic: "a".repeat(3001) }).success).toBe(false));
-  test("rate windows deny over quota and reset after the window", () => {
-    const key = crypto.randomUUID();
-    expect(incrementLocal(key, 2, now)).toBe(true);
-    expect(incrementLocal(key, 2, now)).toBe(true);
-    expect(incrementLocal(key, 2, now)).toBe(false);
-    expect(incrementLocal(key, 2, now + 3600001)).toBe(true);
-  });
 });
 
 test("SDK step markers are stripped while assistant text survives", () => {

@@ -74,9 +74,7 @@ test("debate saves draft, restores transcript and completes exactly once", async
   );
   await expect(page.getByText(answer, { exact: true })).toBeVisible();
   // Make the evaluation provider unavailable to test recoverable completion.
-  await page.route("**/_serverFn/**", (route) =>
-    route.fulfill({ status: 503, body: "Unavailable" }),
-  );
+  await page.route("**/api/ai/**", (route) => route.fulfill({ status: 503, body: "Unavailable" }));
   await page.getByRole("button", { name: "Finish & review", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Session review", exact: true })).toBeVisible();
   await expect(page.getByText("100 XP earned", { exact: false })).toBeVisible();
@@ -139,9 +137,48 @@ test("server rejects foreign-origin and malformed AI requests", async ({ request
   expect(foreign.status()).toBe(403);
   const first = await request.get("/dashboard");
   expect(first.headers()["x-content-type-options"]).toBe("nosniff");
+  const access = await request.post("/api/access", { headers: { origin: baseURL! }, data: {} });
+  const capability = await access.json();
   const malformed = await request.post("/api/session", {
-    headers: { origin: baseURL! },
+    headers: { origin: baseURL!, authorization: "Bearer " + capability.token },
     data: { topic: "Hi", modeId: "unknown", messages: [] },
   });
   expect(malformed.status()).toBe(400);
+});
+
+test("direct backend AI capabilities obey CORS and never grant account access", async ({
+  page,
+}) => {
+  await page.goto("/dashboard");
+  const result = await page.evaluate(async () => {
+    const capability = await (
+      await fetch("/api/access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      })
+    ).json();
+    const target = "http://127.0.0.1:4100";
+    const malformed = await fetch(target + "/api/session", {
+      method: "POST",
+      credentials: "omit",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + capability.token },
+      body: "{}",
+    });
+    const account = await fetch(target + "/api/practice", {
+      credentials: "omit",
+      headers: { Authorization: "Bearer " + capability.token },
+    });
+    const forged = await fetch(target + "/api/session", {
+      method: "POST",
+      credentials: "omit",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + capability.token.slice(0, -1) + "x",
+      },
+      body: "{}",
+    });
+    return [malformed.status, account.status, forged.status];
+  });
+  expect(result).toEqual([400, 401, 401]);
 });

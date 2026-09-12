@@ -1,38 +1,40 @@
-import { SMTPServer } from "smtp-server";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { handleAccounts } from "../../src/lib/account-handler.server";
-import { getDatabase } from "../../src/lib/database.server";
-import { getAuth } from "../../src/lib/auth.server";
-import { visitorCookie } from "../../src/lib/request-security.server";
-import type { PracticeSession } from "../../src/lib/practice-types";
+import { handleAccounts } from "../../backend/src/lib/account-handler.server";
+import {
+  getDatabase,
+  initializeDatabase,
+  closeDatabase,
+  consumeAccountLimit,
+} from "../../backend/src/lib/database.server";
+import { getAuth } from "../../backend/src/lib/auth.server";
+import { visitorCookie } from "../../backend/src/lib/request-security.server";
+import type { PracticeSession } from "../../shared/practice-types";
 
 const origin = "http://localhost:3456";
-process.env["DATABASE_PATH"] = join(mkdtempSync(join(tmpdir(), "mindforge-auth-")), "test.sqlite");
 process.env["AUTH_SECRET"] = "unit-test-account-secret-at-least-32-characters";
-process.env["APP_ORIGIN"] = origin;
+process.env["FRONTEND_ORIGIN"] = origin;
 // Fake credentials exercise Google authorization construction, never token exchange.
 process.env["GOOGLE_CLIENT_ID"] = "test-google-client.apps.googleusercontent.com";
 process.env["GOOGLE_CLIENT_SECRET"] = "test-only-google-secret";
 const mail: string[] = [];
-const smtp = new SMTPServer({
-  authOptional: true,
-  disabledCommands: ["AUTH", "STARTTLS"],
-  logger: false,
-  onData(stream, _session, callback) {
-    let content = "";
-    stream.on("data", (chunk) => {
-      content += String(chunk);
-    });
-    stream.on("end", () => {
-      mail.push(content);
-      callback();
-    });
-  },
+const originalFetch = globalThis.fetch;
+process.env["SESSION_SECRET"] = "test-signed-visitor-secret-at-least-32-characters";
+process.env["RESEND_API_KEY"] = "test-mail-key";
+process.env["MAIL_FROM"] = "MindForge <test@example.test>";
+globalThis.fetch = Object.assign(async (input: RequestInfo | URL, init?: RequestInit) => {
+  if (String(input) === "https://api.resend.com/emails") {
+    mail.push(JSON.parse(String(init?.body)).text);
+    return Response.json({ id: "test-delivery" });
+  }
+  return originalFetch(input, init);
+}, originalFetch);
+afterAll(async () => {
+  globalThis.fetch = originalFetch;
+  await closeDatabase();
 });
-afterAll(() => smtp.close());
 const password = "Test passphrase for account checks!";
 let alice = "",
   bob = "",
@@ -90,13 +92,7 @@ function practice(overrides: Partial<PracticeSession> = {}): PracticeSession {
   };
 }
 beforeAll(async () => {
-  await new Promise<void>((resolve) => smtp.listen(0, "127.0.0.1", resolve));
-  const address = smtp.server.address();
-  if (!address || typeof address === "string") throw new Error("SMTP test listener failed");
-  process.env["SMTP_HOST"] = "127.0.0.1";
-  process.env["SMTP_PORT"] = String(address.port);
-  process.env["SMTP_REQUIRE_TLS"] = "false";
-  process.env["SMTP_FROM"] = "MindForge <test@example.test>";
+  await initializeDatabase();
   const a = await call("/api/auth/sign-up/email", {
     name: "Alice",
     email: "alice@example.test",
@@ -117,9 +113,9 @@ beforeAll(async () => {
 describe("First-party accounts and persistence", () => {
   test("email registration hashes passwords and returns an HttpOnly same-site session", async () => {
     expect(alice).toContain("mindforge.session_token");
-    const account = getDatabase()
-      .prepare("SELECT password FROM account WHERE userId=?")
-      .get(aliceId) as { password: string };
+    const account = (await getDatabase()
+      .prepare('SELECT password FROM account WHERE "userId"=?')
+      .get(aliceId)) as { password: string };
     expect(account.password).not.toBe(password);
     expect(account.password.length).toBeGreaterThan(60);
     const response = await call("/api/auth/sign-in/email", {
@@ -200,11 +196,11 @@ describe("First-party accounts and persistence", () => {
       (await (await call("/api/practice", undefined, bob)).json()).sessions.length,
     ).toBeGreaterThan(0);
   });
-  test("invalid recovery tokens fail and unconfigured SMTP is reported honestly", async () => {
+  test("invalid recovery tokens fail and unconfigured email API is reported honestly", async () => {
     expect(
       (await call("/api/auth/reset-password", { token: "invalid", newPassword: password })).status,
     ).toBe(400);
-    delete process.env["SMTP_HOST"];
+    delete process.env["RESEND_API_KEY"];
     expect(
       (
         await call("/api/auth/request-password-reset", {
@@ -213,7 +209,7 @@ describe("First-party accounts and persistence", () => {
         })
       ).status,
     ).toBe(503);
-    process.env["SMTP_HOST"] = "127.0.0.1";
+    process.env["RESEND_API_KEY"] = "127.0.0.1";
   });
   test("server-side name validation and authenticated profile updates work", async () => {
     expect((await call("/api/auth/update-user", { name: " " }, alice)).status).toBe(400);
@@ -249,7 +245,7 @@ describe("First-party accounts and persistence", () => {
     );
     expect(response?.status).toBe(409);
   });
-  test("password recovery sends through SMTP, redeems once and revokes older sessions", async () => {
+  test("password recovery sends through email API, redeems once and revokes older sessions", async () => {
     const response = await call("/api/auth/request-password-reset", {
       email: "bob@example.test",
       redirectTo: "/reset-password",
@@ -283,4 +279,26 @@ describe("First-party accounts and persistence", () => {
     expect((await call("/api/auth/sign-out", {}, alice)).status).toBe(200);
     expect((await call("/api/practice", undefined, alice)).status).toBe(401);
   });
+});
+
+test("AI limits remain after reconnect and enforce atomic concurrent increments", async () => {
+  await initializeDatabase();
+  const key = "test-limit:" + crypto.randomUUID();
+  const results = await Promise.all(
+    Array.from({ length: 5 }, () => consumeAccountLimit(key, 2, 3600000)),
+  );
+  expect(results.filter((r) => r.allowed)).toHaveLength(2);
+  await closeDatabase();
+  expect((await consumeAccountLimit(key, 2, 3600000)).allowed).toBe(false);
+});
+
+test("accounts and private practice tables stay outside the public schema", async () => {
+  await initializeDatabase();
+  const rows = await getDatabase()
+    .prepare(
+      "SELECT table_schema,table_name FROM information_schema.tables WHERE table_schema IN ('mindforge','public') AND table_name IN ('user','account','practice_sessions')",
+    )
+    .all();
+  expect(rows).toHaveLength(3);
+  expect(rows.every((row) => row.table_schema === "mindforge")).toBe(true);
 });

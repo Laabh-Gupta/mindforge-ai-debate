@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: mindforge-api
+    runtime: docker
+    plan: free
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_CHAT_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_STRUCTURED_MODEL
+        value: openai/gpt-oss-120b
+      - key: AI_REQUESTS_PER_HOUR
+        value: 60
+      - key: AI_GLOBAL_REQUESTS_PER_HOUR
+        value: 600
+      - key: PG_POOL_MAX
+        value: 3

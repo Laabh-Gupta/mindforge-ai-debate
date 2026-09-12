@@ -1,0 +1,10 @@
+[build]
+  command = "bun run build:frontend"
+  publish = "frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  BUN_VERSION = "1.4.0"
+
+# The build generates API proxy rules using VITE_BACKEND_ORIGIN, then the SPA fallback.
+# Add only the public VITE_BACKEND_ORIGIN in Netlify's environment settings.

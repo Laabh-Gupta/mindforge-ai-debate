@@ -15,17 +15,9 @@ export default defineConfig({
   webServer: process.env["TEST_BASE_URL"]
     ? []
     : {
-        command: "node .output/server/index.mjs",
+        command: "node scripts/test-stack.mjs",
         url: "http://127.0.0.1:3100/api/health",
-        env: {
-          PORT: "3100",
-          HOST: "127.0.0.1",
-          NODE_ENV: "production",
-          APP_ORIGIN: "http://127.0.0.1:3100",
-          AUTH_SECRET: "test-only-auth-secret-for-browser-tests-123456789",
-          DATABASE_PATH: "output/qa/e2e-accounts.sqlite",
-          SESSION_SECRET: "test-only-secret-for-browser-tests-123456789",
-        },
+        timeout: 120000,
         reuseExistingServer: false,
       },
 });
