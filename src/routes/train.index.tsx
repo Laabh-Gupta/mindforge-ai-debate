@@ -31,7 +31,11 @@ function TrainingHub() {
     >
       <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {MODULE_NAV.map((item) => (
-          <Link key={item.to} to={item.to} className="glass hover-lift flex flex-col rounded-3xl p-6">
+          <Link
+            key={item.to}
+            to={item.to}
+            className="glass hover-lift flex flex-col rounded-3xl p-6"
+          >
             <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-brand">
               <item.icon className="h-6 w-6 text-primary-foreground" />
             </span>

@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { requestPasswordReset, describeAuthError } from "@/services/auth";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
@@ -32,9 +34,14 @@ function ForgotPasswordPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setLoading(false);
-    setSent(true);
+    try {
+      await requestPasswordReset(email);
+      setSent(true);
+    } catch (error) {
+      toast.error(describeAuthError(error));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -52,8 +59,8 @@ function ForgotPasswordPage() {
     >
       {sent ? (
         <p className="rounded-2xl bg-secondary/50 px-5 py-4 text-sm text-muted-foreground">
-          If an account exists for <span className="text-foreground">{email}</span>, a reset link
-          is on its way.
+          If an account exists for <span className="text-foreground">{email}</span>, a reset link is
+          on its way.
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -62,17 +69,15 @@ function ForgotPasswordPage() {
             <Input
               id="email"
               type="email"
+              autoComplete="email"
+              maxLength={254}
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
             />
           </div>
-          <Button
-            type="submit"
-            disabled={loading}
-            className="h-11 w-full bg-gradient-brand text-primary-foreground"
-          >
+          <Button type="submit" disabled={loading} className="h-11 w-full text-primary-foreground">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Send reset link
           </Button>

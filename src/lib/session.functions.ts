@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import type { SessionEvaluation, ThinkingSteps } from "./evaluation-shared";
 import {
@@ -18,21 +18,40 @@ import {
 import { buildExtemporeTopicPrompt } from "./session-prompt";
 
 const EvaluateInput = z.object({
-  modeId: z.string(),
-  modeName: z.string(),
-  topic: z.string(),
-  variant: z.string().optional(),
-  turns: z.array(
-    z.object({ speaker: z.string(), role: z.enum(["user", "ai"]), content: z.string() }),
-  ),
+  modeId: z.string().min(1).max(60),
+  modeName: z.string().min(1).max(120),
+  topic: z.string().min(1).max(3000),
+  variant: z.string().max(120).optional(),
+  turns: z
+    .array(
+      z.object({
+        speaker: z.string().max(200),
+        role: z.enum(["user", "ai"]),
+        content: z.string().max(20000),
+      }),
+    )
+    .min(1)
+    .max(400),
   observerAnswers: z
-    .array(z.object({ question: z.string(), answer: z.string() }))
+    .array(z.object({ question: z.string().max(2000), answer: z.string().max(12000) }))
+    .max(10)
     .optional(),
 });
 
 export const evaluateSession = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => EvaluateInput.parse(input))
+  .validator((input: unknown) => EvaluateInput.parse(input))
   .handler(async ({ data }): Promise<SessionEvaluation | null> => {
+    const words = (
+      data.observerAnswers
+        ? data.observerAnswers.map((a) => a.answer)
+        : data.turns.filter((t) => t.role === "user").map((t) => t.content)
+    )
+      .join(" ")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean).length;
+    if (words < 20)
+      throw new Error("Add at least 20 words of your own before requesting a review.");
     const observer = (data.observerAnswers?.length ?? 0) > 0;
     const body = observer
       ? [
@@ -63,7 +82,7 @@ export const evaluateSession = createServerFn({ method: "POST" })
   });
 
 export const generateExtemporeTopic = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ theme: z.string() }).parse(input))
+  .validator((input: unknown) => z.object({ theme: z.string().max(3000) }).parse(input))
   .handler(async ({ data }): Promise<string | null> => {
     const text = await runText(buildExtemporeTopicPrompt(data.theme));
     if (!text) return null;
@@ -71,38 +90,38 @@ export const generateExtemporeTopic = createServerFn({ method: "POST" })
   });
 
 export const generateObserverDiscussion = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ topic: z.string() }).parse(input))
+  .validator((input: unknown) => z.object({ topic: z.string().min(1).max(3000) }).parse(input))
   .handler(async ({ data }) => {
     return runStructured(ObserverSchema, buildObserverPrompt(data.topic));
   });
 
 const GdWrapInput = z.object({
-  topic: z.string(),
-  format: z.string(),
-  roster: z.string(),
-  transcript: z.string(),
+  topic: z.string().min(1).max(3000),
+  format: z.string().max(120),
+  roster: z.string().max(5000),
+  transcript: z.string().max(100000),
 });
 
 /** Moderator closing feedback + per-participant contribution summary for a GD. */
 export const summarizeGroupDiscussion = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => GdWrapInput.parse(input))
+  .validator((input: unknown) => GdWrapInput.parse(input))
   .handler(async ({ data }) => {
     if (!data.transcript.trim()) return null;
     return runStructured(GdWrapSchema, buildGdWrapPrompt(data));
   });
 
 const ExplainInput = z.object({
-  modeId: z.string(),
-  modeName: z.string(),
-  topic: z.string(),
-  variant: z.string().optional(),
-  userTurn: z.string(),
-  aiTurn: z.string(),
+  modeId: z.string().min(1).max(60),
+  modeName: z.string().min(1).max(120),
+  topic: z.string().min(1).max(3000),
+  variant: z.string().max(120).optional(),
+  userTurn: z.string().max(20000),
+  aiTurn: z.string().max(20000),
 });
 
 /** Educational breakdown of one AI turn for the Thinking View. */
 export const explainTurn = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => ExplainInput.parse(input))
+  .validator((input: unknown) => ExplainInput.parse(input))
   .handler(async ({ data }): Promise<ThinkingSteps | null> => {
     if (!data.aiTurn.trim()) return null;
     return runStructured(

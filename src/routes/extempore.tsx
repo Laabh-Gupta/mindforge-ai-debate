@@ -1,3 +1,4 @@
+import { practiceSearch } from "@/lib/practice-types";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { ChipRow, ModulePage } from "@/components/mindforge/ModulePage";
@@ -7,6 +8,7 @@ const description =
   "A surprise topic, 60 seconds of prep, 120 seconds of speech, then a detailed evaluation of how you thought on your feet.";
 
 export const Route = createFileRoute("/extempore")({
+  validateSearch: practiceSearch,
   head: () => ({
     meta: [
       { title },

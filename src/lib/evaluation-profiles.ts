@@ -163,9 +163,7 @@ export function defaultProfileIdForMode(modeId: string | undefined) {
   return PRESET_PROFILES.some((p) => p.id === modeId) ? modeId : BALANCED_PROFILE.id;
 }
 
-export function makeCustomProfile(
-  base: Record<WeightedDimensionKey, number>,
-): EvaluationProfile {
+export function makeCustomProfile(base: Record<WeightedDimensionKey, number>): EvaluationProfile {
   return {
     id: CUSTOM_PROFILE_ID,
     name: "Custom",
@@ -261,9 +259,7 @@ export function applyProfile(
     return { overall: scores?.overallPerformance ?? 0, ranked, strongest: null, weakest: null };
   }
 
-  const overall = Math.round(
-    ranked.reduce((sum, row) => sum + row.score * row.share, 0),
-  );
+  const overall = Math.round(ranked.reduce((sum, row) => sum + row.score * row.share, 0));
 
   // Impact = how much a dimension moves this profile's overall score.
   const impact = [...ranked].filter((row) => row.weight > 0);
@@ -274,4 +270,20 @@ export function applyProfile(
     null;
 
   return { overall, ranked, strongest, weakest };
+}
+export function sessionCustomProfile(extra?: Record<string, unknown>) {
+  const raw = extra?.["evaluationWeights"];
+  if (
+    raw &&
+    typeof raw === "object" &&
+    WEIGHTED_DIMENSIONS.every(
+      (key) =>
+        typeof (raw as Record<string, unknown>)[key] === "number" &&
+        Number.isFinite((raw as Record<string, number>)[key]) &&
+        (raw as Record<string, number>)[key]! >= 0 &&
+        (raw as Record<string, number>)[key]! <= 10,
+    )
+  )
+    return makeCustomProfile(raw as Record<WeightedDimensionKey, number>);
+  return loadCustomProfile();
 }

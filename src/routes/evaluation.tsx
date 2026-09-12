@@ -1,385 +1,398 @@
+import { ConversationText } from "@/components/mindforge/ConversationText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
-  Lightbulb,
-  RotateCcw,
-  Sliders,
-  TrendingDown,
-} from "lucide-react";
-
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, Lightbulb, RotateCcw, Sliders, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
-import { AppShellRaw } from "@/components/mindforge/AppShell";
 import {
-  DIMENSION_LABELS,
-  SESSION_KEY,
-  type EvaluationProfile,
-  type SessionEvaluation,
-  type StoredSession,
-  type WeightedDimensionKey,
-} from "@/lib/evaluation-shared";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AppShell } from "@/components/mindforge/AppShell";
+import { ExportMenu } from "@/components/mindforge/ExportMenu";
+import { usePractice } from "@/components/mindforge/PracticeProvider";
 import {
+  PRESET_PROFILES,
   BALANCED_PROFILE,
   CUSTOM_PROFILE_ID,
-  PRESET_PROFILES,
   applyProfile,
-  defaultProfileIdForMode,
   getProfile,
   loadCustomProfile,
-  loadSelectedProfileId,
   makeCustomProfile,
   saveCustomProfile,
-  saveSelectedProfileId,
+  sessionCustomProfile,
 } from "@/lib/evaluation-profiles";
 import { evaluateSession } from "@/lib/session.functions";
-import { saveRecord } from "@/lib/skills-store";
-
-const title = "Session Evaluation — MindForge";
-const description =
-  "A fifteen-dimension evaluation of your session: critical thinking, communication, leadership, persuasion, evidence and more.";
+import type { SessionEvaluation, WeightedDimensionKey } from "@/lib/evaluation-shared";
 
 export const Route = createFileRoute("/evaluation")({
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
+  validateSearch: (search: Record<string, unknown>): { session?: string | undefined } => ({
+    session: typeof search["session"] === "string" ? search["session"] : undefined,
   }),
+  head: () => ({ meta: [{ title: "Session review | MindForge" }] }),
   component: EvaluationPage,
 });
-
-function InsightList({
-  heading,
-  icon: Icon,
-  items,
-  tone,
-}: {
-  heading: string;
-  icon: typeof CheckCircle2;
-  items: string[];
-  tone: string;
-}) {
-  return (
-    <div className="glass hover-lift rounded-2xl p-6">
-      <div className="flex items-center gap-2">
-        <Icon className={`h-5 w-5 ${tone}`} />
-        <h3 className="text-base font-semibold">{heading}</h3>
-      </div>
-      <ul className="mt-4 space-y-3">
-        {items.length === 0 && (
-          <li className="text-sm text-muted-foreground">Nothing notable this session.</li>
-        )}
-        {items.map((i) => (
-          <li key={i} className="flex gap-2 text-sm text-muted-foreground">
-            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-            {i}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
+const inFlight = new Map<string, Promise<SessionEvaluation | null>>();
 function EvaluationPage() {
+  const { session: requestedId } = Route.useSearch();
+  const { sessions, ready, save, owner } = usePractice();
   const run = useServerFn(evaluateSession);
-  const [session, setSession] = useState<StoredSession | null>(null);
-  const [evaluation, setEvaluation] = useState<SessionEvaluation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [profileId, setProfileId] = useState<string>(BALANCED_PROFILE.id);
-  const [custom, setCustom] = useState<EvaluationProfile>(() =>
-    makeCustomProfile(BALANCED_PROFILE.weights),
-  );
-  const [editingWeights, setEditingWeights] = useState(false);
-
+  const session = requestedId
+    ? sessions.find((s) => s.id === requestedId)
+    : sessions.find((s) => s.status === "completed");
+  const [loading, setLoading] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [custom, setCustom] = useState(() => makeCustomProfile(BALANCED_PROFILE.weights));
+  const [profileId, setProfileId] = useState(BALANCED_PROFILE.id);
+  const [editing, setEditing] = useState(false);
+  const saveRef = useRef(save);
+  saveRef.current = save;
   const profile = getProfile(profileId, custom);
-  const result = useMemo(
-    () => applyProfile(evaluation?.scores, profile),
-    [evaluation, profile],
-  );
-
-  function selectProfile(id: string) {
-    setProfileId(id);
-    saveSelectedProfileId(id);
-    if (id === CUSTOM_PROFILE_ID) setEditingWeights(true);
-  }
-
-  function setWeight(key: WeightedDimensionKey, value: number) {
-    const next = makeCustomProfile({ ...custom.weights, [key]: value });
-    setCustom(next);
-    saveCustomProfile(next);
-    if (profileId !== CUSTOM_PROFILE_ID) {
-      setProfileId(CUSTOM_PROFILE_ID);
-      saveSelectedProfileId(CUSTOM_PROFILE_ID);
-    }
-  }
-
+  const result = applyProfile(session?.evaluation?.scores, profile);
   useEffect(() => {
-    let cancelled = false;
-    let stored: StoredSession | null = null;
-    try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
-      stored = raw ? (JSON.parse(raw) as StoredSession) : null;
-    } catch {
-      stored = null;
-    }
-    setSession(stored);
     setCustom(loadCustomProfile());
-    setProfileId(
-      stored?.profileId ?? loadSelectedProfileId(defaultProfileIdForMode(stored?.modeId)),
-    );
-    if (!stored) {
-      setLoading(false);
-      return;
+  }, []);
+  useEffect(() => {
+    setProfileId(session?.profileId ?? BALANCED_PROFILE.id);
+    setCustom(sessionCustomProfile(session?.extra));
+    setLoading(false);
+    setFailure(null);
+  }, [session?.id]);
+  useEffect(() => {
+    if (!ready || !session || session.status !== "completed" || session.evaluation) return;
+    let cancelled = false;
+    setLoading(true);
+    setFailure(null);
+    const key = `${owner}:${session.id}`;
+    let pending = inFlight.get(key);
+    if (!pending) {
+      pending = run({
+        data: {
+          modeId: session.modeId,
+          modeName: session.modeName,
+          topic: session.topic,
+          variant: session.variant,
+          turns: session.turns,
+          observerAnswers: session.observerAnswers,
+        },
+      });
+      inFlight.set(key, pending);
     }
-
-    void run({
-      data: {
-        modeId: stored.modeId,
-        modeName: stored.modeName,
-        topic: stored.topic,
-        ...(stored.variant ? { variant: stored.variant } : {}),
-        turns: stored.turns,
-        ...(stored.observerAnswers ? { observerAnswers: stored.observerAnswers } : {}),
-      },
-    })
-      .then((result) => {
-        if (cancelled || !result) return;
-        setEvaluation(result);
-        void saveRecord({
-          modeId: stored!.modeId,
-          modeName: stored!.modeName,
-          topic: stored!.topic,
-          at: Date.now(),
-          overall: result.scores.overallPerformance,
-          scores: result.scores,
+    void pending
+      .then((evaluation) => {
+        if (cancelled) return;
+        if (!evaluation) {
+          setFailure("The review could not be generated. Please try again.");
+          return;
+        }
+        const weighted = applyProfile(
+          evaluation.scores,
+          getProfile(session.profileId ?? BALANCED_PROFILE.id, sessionCustomProfile(session.extra)),
+        );
+        saveRef.current({
+          ...session,
+          evaluation,
+          overall: weighted.overall,
+          extra: {
+            ...session.extra,
+            evaluationWeights: getProfile(
+              session.profileId ?? BALANCED_PROFILE.id,
+              sessionCustomProfile(session.extra),
+            ).weights,
+          },
+          updatedAt: Date.now(),
         });
       })
+      .catch((error: unknown) => {
+        if (!cancelled)
+          setFailure(
+            error instanceof Error
+              ? error.message
+              : "The review could not be generated. Please try again.",
+          );
+      })
       .finally(() => {
+        inFlight.delete(key);
         if (!cancelled) setLoading(false);
       });
-
     return () => {
       cancelled = true;
     };
-  }, [run]);
+  }, [session?.id, ready, owner, run, attempt]);
 
-  if (!loading && !session) {
-    return (
-      <AppShellRaw>
-        <main className="mx-auto max-w-2xl px-5 pt-20 text-center">
-          <h1 className="font-display text-2xl font-bold">No session to evaluate yet</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Finish a training session and your evaluation will appear here.
-          </p>
-          <Button asChild className="mt-6 h-11 bg-gradient-brand px-6 text-primary-foreground">
-            <Link to="/train">Go to the Training Hub</Link>
-          </Button>
-        </main>
-    </AppShellRaw>
-    );
+  function setWeight(key: WeightedDimensionKey, value: number) {
+    const next = makeCustomProfile({ ...profile.weights, [key]: value });
+    setCustom(next);
+    saveCustomProfile(next);
+    setProfileId(CUSTOM_PROFILE_ID);
   }
-
-  return (
-    <AppShellRaw>
-      <main className="mx-auto max-w-6xl px-5 pt-10">
-        <section className="glass animate-rise rounded-3xl p-6 text-center sm:p-10">
-          <p className="text-xs tracking-widest text-muted-foreground uppercase">
-            {session?.modeName ?? "Session"} · {profile.name} score
-          </p>
-          <p className="mt-2 font-display text-6xl font-bold text-gradient">
-            {loading ? "…" : evaluation ? result.overall : "—"}
-          </p>
-          {!loading && evaluation && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Holistic read: {evaluation.scores.overallPerformance} · reweighted instantly, no
-              re-run
-            </p>
-          )}
-          <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
-            {loading
-              ? "Reviewing your transcript..."
-              : (evaluation?.summary ??
-                "The evaluation could not be generated for this session. Please try again.")}
-          </p>
-          {!loading && evaluation && result.strongest && result.weakest && (
-            <p className="mx-auto mt-4 max-w-xl text-sm">
-              Under this profile your biggest lift is{" "}
-              <span className="font-medium text-success">
-                {DIMENSION_LABELS[result.strongest]}
-              </span>{" "}
-              and your biggest drag is{" "}
-              <span className="font-medium text-warning">{DIMENSION_LABELS[result.weakest]}</span>.
-            </p>
-          )}
-        </section>
-
-        <section className="glass mt-6 rounded-3xl p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold">Evaluation profile</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{profile.description}</p>
-            </div>
-            <Button variant="outline" onClick={() => setEditingWeights((v) => !v)}>
-              <Sliders className="mr-1 h-4 w-4" />
-              {editingWeights ? "Hide weights" : "Customise weights"}
-            </Button>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {[...PRESET_PROFILES, custom].map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => selectProfile(p.id)}
-                className={`rounded-full px-4 py-2 text-sm transition-colors ${
-                  profileId === p.id
-                    ? "bg-gradient-brand text-primary-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {p.name}
-              </button>
-            ))}
-          </div>
-
-          {editingWeights && (
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              {result.ranked.map((row) => (
-                <div key={row.key}>
-                  <div className="flex items-baseline justify-between gap-3 text-sm">
-                    <span>{row.label}</span>
-                    <span className="text-muted-foreground">
-                      weight {custom.id === profile.id ? custom.weights[row.key] : row.weight}
-                    </span>
-                  </div>
-                  <Slider
-                    className="mt-2"
-                    min={0}
-                    max={10}
-                    step={1}
-                    value={[profile.weights[row.key]]}
-                    onValueChange={([value]) => setWeight(row.key, value ?? 0)}
-                  />
-                </div>
-              ))}
-              <div className="sm:col-span-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    const reset = makeCustomProfile(BALANCED_PROFILE.weights);
-                    setCustom(reset);
-                    saveCustomProfile(reset);
-                    selectProfile(CUSTOM_PROFILE_ID);
-                  }}
-                >
-                  <RotateCcw className="mr-1 h-4 w-4" /> Reset custom weights
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {evaluation && (
-            <div className="mt-6">
-              <p className="text-xs tracking-widest text-muted-foreground uppercase">
-                Same session, other profiles
-              </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                {PRESET_PROFILES.filter((p) => p.id !== profileId)
-                  .slice(0, 3)
-                  .map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => selectProfile(p.id)}
-                      className="rounded-2xl bg-secondary/60 px-4 py-3 text-left"
-                    >
-                      <span className="text-sm text-muted-foreground">{p.name}</span>
-                      <p className="font-display text-2xl font-bold">
-                        {applyProfile(evaluation.scores, p).overall}
-                      </p>
-                    </button>
-                  ))}
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {result.ranked.map((row) => (
-            <div key={row.key} className="glass rounded-2xl p-5">
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-sm text-muted-foreground">{row.label}</span>
-                <span className="font-display text-xl font-bold">
-                  {loading ? "…" : row.score}
-                </span>
-              </div>
-              <Progress value={row.score} className="mt-3 h-2" />
-              <p className="mt-2 text-xs text-muted-foreground">
-                {row.weight === 0
-                  ? "Not counted in this profile"
-                  : `${Math.round(row.share * 100)}% of this profile's score`}
-              </p>
-            </div>
-          ))}
-        </section>
-
-        <section className="mt-8 grid gap-5 lg:grid-cols-2">
-          <InsightList
-            heading="Strengths"
-            icon={CheckCircle2}
-            items={evaluation?.strengths ?? []}
-            tone="text-success"
-          />
-          <InsightList
-            heading="Weaknesses"
-            icon={TrendingDown}
-            items={evaluation?.weaknesses ?? []}
-            tone="text-warning"
-          />
-          <div className="glass hover-lift rounded-2xl p-6">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              <h3 className="text-base font-semibold">Logical fallacies found</h3>
-            </div>
-            <ul className="mt-4 space-y-3">
-              {(evaluation?.fallacies.length ?? 0) === 0 && (
-                <li className="text-sm text-muted-foreground">
-                  No clear logical fallacies detected in your reasoning.
-                </li>
-              )}
-              {evaluation?.fallacies.map((f) => (
-                <li key={f.name} className="rounded-xl bg-secondary/60 px-4 py-3">
-                  <p className="text-sm font-medium">{f.name}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{f.detail}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <InsightList
-            heading="Suggestions for improvement"
-            icon={Lightbulb}
-            items={evaluation?.suggestions ?? []}
-            tone="text-primary"
-          />
-        </section>
-
-        <div className="mt-10 flex justify-center">
-          <Button asChild size="lg" className="h-12 bg-gradient-brand px-8 text-primary-foreground">
-            <Link to="/train">
-              Next session <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
+  function applyWeights() {
+    if (!session?.evaluation) return;
+    if (!Object.values(profile.weights).some((w) => w > 0)) {
+      toast.error("Give at least one dimension a non-zero weight.");
+      return;
+    }
+    save({
+      ...session,
+      profileId,
+      overall: result.overall,
+      extra: { ...session.extra, evaluationWeights: profile.weights },
+      updatedAt: Date.now(),
+    });
+    toast.success("Scoring updated. Your session and XP stay the same.");
+  }
+  if (!ready)
+    return (
+      <AppShell title="Session review">
+        <p role="status">Loading your saved session…</p>
+      </AppShell>
+    );
+  if (!session || session.status !== "completed")
+    return (
+      <AppShell title="Session review">
+        <div className="mf-empty">
+          <h2 className="text-lg text-foreground">No completed session here yet</h2>
+          <p className="mt-2 text-sm">Complete a practice session to receive your review.</p>
+          <Button asChild className="mt-5">
+            <Link to="/train">Choose a training mode</Link>
           </Button>
         </div>
-      </main>
-    </AppShellRaw>
+      </AppShell>
+    );
+  const evaluation = session.evaluation;
+  return (
+    <AppShell
+      title="Session review"
+      subtitle={session.topic}
+      width="wide"
+      actions={
+        <ExportMenu
+          session={{
+            ...session,
+            ...(evaluation ? { overall: result.overall } : {}),
+            profileId,
+            extra: { ...session.extra, evaluationWeights: profile.weights },
+          }}
+        />
+      }
+    >
+      <section className="mf-panel grid gap-6 p-6 sm:grid-cols-[auto_1fr] sm:p-8">
+        <div className="sm:pr-8">
+          <p className="text-sm text-muted-foreground">{profile.name} score</p>
+          <p className="mf-number mt-3 text-6xl font-medium text-primary">
+            {evaluation ? result.overall : loading ? "…" : "Not rated"}
+          </p>
+          {evaluation && <p className="mt-3 text-xs text-muted-foreground">out of 100</p>}
+        </div>
+        <div>
+          <p className="mf-label">{session.modeName}</p>
+          <h2 className="mt-3 text-lg font-medium">
+            {loading
+              ? "Reviewing your conversation"
+              : evaluation
+                ? "What to take into your next conversation"
+                : "Your session is saved"}
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {evaluation?.summary ??
+              (loading
+                ? "Your review will appear here shortly. You can return to this page later."
+                : (failure ??
+                  "The review could not be generated. Retry when the AI service is available."))}
+          </p>
+          <p className="mt-4 text-xs text-muted-foreground">
+            {Math.floor(session.durationSeconds / 60)} minutes of practice · 100 XP earned
+          </p>
+          {failure && !loading && (
+            <Button className="mt-4" variant="outline" onClick={() => setAttempt((n) => n + 1)}>
+              <RotateCcw className="size-4" />
+              Retry review
+            </Button>
+          )}
+        </div>
+      </section>
+      {evaluation && (
+        <>
+          <section className="mt-7 border-y border-border py-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-medium">Score what matters to you</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Change the weighting without repeating the conversation.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Select value={profileId} onValueChange={setProfileId}>
+                  <SelectTrigger className="w-48" aria-label="Evaluation profile">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[...PRESET_PROFILES, custom].map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={() => setEditing((v) => !v)}>
+                  <Sliders className="size-4" />
+                  {editing ? "Hide weights" : "Customise weights"}
+                </Button>
+                <Button onClick={applyWeights}>Re-run scoring</Button>
+              </div>
+            </div>
+            {editing && (
+              <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                {result.ranked.map((row) => (
+                  <div key={row.key}>
+                    <div className="mb-3 flex justify-between text-sm">
+                      <label id={`weight-${row.key}`}>{row.label}</label>
+                      <span className="text-muted-foreground">{Math.round(row.share * 100)}%</span>
+                    </div>
+                    <Slider
+                      aria-labelledby={`weight-${row.key}`}
+                      min={0}
+                      max={10}
+                      step={1}
+                      value={[profile.weights[row.key]]}
+                      onValueChange={([v]) => setWeight(row.key, v ?? 0)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+          <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {result.ranked
+              .filter((r) => r.weight > 0)
+              .map((row) => (
+                <div key={row.key} className="mf-panel p-5">
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="text-muted-foreground">{row.label}</span>
+                    <span className="font-medium">{row.score}</span>
+                  </div>
+                  <div className="mt-4 h-1 rounded-full bg-secondary">
+                    <div
+                      className="h-1 rounded-full bg-primary/70"
+                      style={{ width: `${row.score}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+          </section>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Scores are coaching estimates from your text. Vocal confidence, pronunciation, and
+            delivery are not measured.
+          </p>
+          <section className="mt-8 grid gap-5 sm:grid-cols-2">
+            {[
+              { title: "Strengths", icon: CheckCircle2, items: evaluation.strengths },
+              { title: "Areas to improve", icon: Lightbulb, items: evaluation.weaknesses },
+              { title: "Next practice", icon: RotateCcw, items: evaluation.suggestions },
+              {
+                title: "Reasoning to revisit",
+                icon: AlertTriangle,
+                items: evaluation.fallacies.map((f) => `${f.name}: ${f.detail}`),
+              },
+            ].map((block) => (
+              <div key={block.title} className="mf-panel p-6">
+                <h2 className="flex items-center gap-2 font-medium">
+                  <block.icon className="size-4 text-primary" />
+                  {block.title}
+                </h2>
+                <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+                  {block.items.length ? (
+                    block.items.map((item) => <li key={item}>{item}</li>)
+                  ) : (
+                    <li>None identified in this review.</li>
+                  )}
+                </ul>
+              </div>
+            ))}
+          </section>
+        </>
+      )}
+      {evaluation?.details && (
+        <>
+          <section className="mt-8">
+            <h2 className="text-lg font-medium">A closer look</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {[
+                { label: "Key claims", text: evaluation.details.keyClaims.join(" ") },
+                {
+                  label: "Supporting evidence",
+                  text:
+                    evaluation.details.supportingEvidence.join(" ") ||
+                    "No supporting evidence identified.",
+                },
+                { label: "Strongest contribution", text: evaluation.details.strongestContribution },
+                {
+                  label: "Contribution to strengthen",
+                  text: evaluation.details.weakestContribution,
+                },
+                { label: "Best counterargument", text: evaluation.details.bestCounterargument },
+                {
+                  label: "Missed opportunities",
+                  text: evaluation.details.missedOpportunities.join(" "),
+                },
+              ].map((item) => (
+                <article key={item.label} className="mf-panel p-6">
+                  <h3 className="text-sm font-medium">{item.label}</h3>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    {item.text || "None identified."}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+          {evaluation.details.answers.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-lg font-medium">Question by question</h2>
+              <div className="mt-4 space-y-4">
+                {evaluation.details.answers.map((answer, i) => (
+                  <article key={i} className="mf-panel p-6">
+                    <h3 className="font-medium">{answer.question}</h3>
+                    <p className="mt-3 text-sm text-muted-foreground">{answer.assessment}</p>
+                    <p className="mt-3 text-sm">{answer.improvement}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+          <section className="mt-8 border-y border-border py-6">
+            <p className="mf-label">Next practice topic</p>
+            <p className="mt-3">{evaluation.details.recommendedTopic}</p>
+          </section>
+        </>
+      )}
+      <section className="mt-10">
+        <h2 className="mb-5 text-lg font-medium">Your conversation</h2>
+        <div className="mf-transcript space-y-4">
+          {session.turns.map((t, i) => (
+            <article key={i} className="mf-panel p-5">
+              <h3 className="mb-2 text-sm font-medium text-primary">{t.speaker}</h3>
+              <div className="text-sm leading-relaxed">
+                <ConversationText text={t.content} />
+              </div>
+            </article>
+          ))}
+          {session.observerAnswers?.map((a) => (
+            <article key={a.question} className="mf-panel p-5">
+              <h3 className="text-sm font-medium">{a.question}</h3>
+              <p className="mt-3 text-sm">{a.answer || "Unanswered"}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+      <Button asChild className="mt-8">
+        <Link to="/train">Start another session</Link>
+      </Button>
+    </AppShell>
   );
 }

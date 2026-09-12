@@ -25,27 +25,34 @@ const STEP_ICONS = [Ear, Compass, Lightbulb, Route] as const;
 
 function StepRows({ steps }: { steps: ThinkingSteps }) {
   const rows = [
-    { label: "What the AI heard", value: steps.heard },
-    { label: "The move it made", value: `${steps.move} — ${steps.moveWhy}` },
+    { label: "Your claim", value: steps.heard },
+    { label: "Response technique", value: `${steps.move} — ${steps.moveWhy}` },
     { label: "Why it matters", value: steps.principle },
+    { label: "Supporting evidence", value: steps.evidence },
+    { label: "Assumptions", value: steps.assumptions },
+    { label: "Possible counterargument", value: steps.counterargument },
+    { label: "Open question", value: steps.openQuestion },
+    { label: "Reasoning to check", value: steps.fallacies },
     { label: "Your best next move", value: steps.nextMove },
   ];
   return (
     <ol className="mt-3 space-y-3">
-      {rows.map((row, i) => {
-        const Icon = STEP_ICONS[i] ?? Lightbulb;
-        return (
-          <li key={row.label} className="flex gap-3">
-            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary">
-              <Icon className="h-3.5 w-3.5 text-primary" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs tracking-wide text-muted-foreground uppercase">{row.label}</p>
-              <p className="mt-1 text-sm leading-relaxed">{row.value}</p>
-            </div>
-          </li>
-        );
-      })}
+      {rows
+        .filter((row) => row.value)
+        .map((row, i) => {
+          const Icon = STEP_ICONS[i] ?? Lightbulb;
+          return (
+            <li key={row.label} className="flex gap-3">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary">
+                <Icon className="h-3.5 w-3.5 text-primary" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs tracking-wide text-muted-foreground uppercase">{row.label}</p>
+                <p className="mt-1 text-sm leading-relaxed">{row.value}</p>
+              </div>
+            </li>
+          );
+        })}
     </ol>
   );
 }
@@ -176,13 +183,7 @@ function PanelEntry({
 }
 
 /** The docked desktop column: one entry per completed AI turn, newest first. */
-export function ThinkingPanel({
-  pairs,
-  context,
-}: {
-  pairs: ThinkingPair[];
-  context: Context;
-}) {
+export function ThinkingPanel({ pairs, context }: { pairs: ThinkingPair[]; context: Context }) {
   return (
     <aside className="sticky top-24 max-h-[calc(100vh-8rem)] space-y-4 overflow-y-auto pb-4">
       <div>
@@ -190,7 +191,7 @@ export function ThinkingPanel({
           <Brain className="h-4 w-4 text-primary" /> Thinking View
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          How each reply was reasoned — and how to answer it well.
+          An educational reading of the exchange, with a useful next step.
         </p>
       </div>
       {pairs.length === 0 && (

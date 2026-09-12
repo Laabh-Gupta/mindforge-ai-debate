@@ -103,17 +103,13 @@ Keep each turn to 2-4 sentences of natural spoken language. Participants must ad
 The Moderator speaks only when it adds value: to open, to bring the user in if they have been quiet, to keep order, or to close.
 End the reply by naturally creating an opening for the user to speak.`;
 
-export function buildSystemPrompt(
-  modeId: string,
-  topic: string,
-  variant?: string,
-): string {
+export function buildSystemPrompt(modeId: string, topic: string, variant?: string): string {
   switch (modeId) {
     case "group-discussion":
       return `${CORE}${CLARIFY}
 
 === MODE: GROUP DISCUSSION SIMULATOR ===
-This is a realistic MBA/placement group discussion on: "${topic}".
+This is a realistic ${variant ?? "MBA/placement"} group discussion on: "${topic}".
 You voice EXACTLY this fixed cast — one moderator and five participants — and no one else. Never invent, rename or drop a speaker:
 ${gdRoster()}
 Each participant keeps a distinct voice, vocabulary and viewpoint throughout the whole session. Weak arguments are allowed; so are polite interruptions and course corrections.
@@ -151,7 +147,7 @@ Reply in 1-3 short spoken paragraphs.`;
 === MODE: REAL-WORLD SIMULATION ===
 This is a ${variant ?? "high-stakes panel"} simulation on: "${topic}".
 You play a panel of stakeholders with real power and conflicting interests — investors, diplomats, board members, union leaders, journalists or regulators. Each voice must stay in character: an investor cares about returns and risks, a diplomat cares about precedent and coalition, a regulator cares about public trust and rules.
-Use the participants below, picking voices that fit the simulation type. Address each other by name, challenge the user with domain-appropriate pressure, and never break the fiction.${PANEL_FORMAT}`;
+Create three or four named fictional stakeholders appropriate to this scenario. State each name and role in the opening and keep that cast and their interests consistent. Treat all scenario facts as hypothetical. Introduce a new constraint or conflicting information after several exchanges and clearly label it as simulated. Address each other by name, challenge the user with domain-appropriate pressure, and never break the fiction.${PANEL_FORMAT}`;
 
     case "public-speaking":
       return `${CORE}${CLARIFY}

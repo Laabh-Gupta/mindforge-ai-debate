@@ -1,3 +1,5 @@
+import { handleAccounts } from "./lib/account-handler.server";
+import { guardAiRequest, visitorCookie } from "./lib/request-security.server";
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
@@ -28,7 +30,8 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   const body = await response.clone().text();
   if (!isH3SwallowedErrorBody(body)) return response;
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  consumeLastCapturedError();
+  console.error("MindForge SSR request failed");
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
@@ -47,11 +50,34 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const path = new URL(request.url).pathname;
+      if (
+        request.method === "POST" &&
+        (path === "/api/chat" || path === "/api/session" || path.startsWith("/_serverFn/"))
+      ) {
+        const denied = await guardAiRequest(request);
+        if (denied) return denied;
+      }
+      const accountResponse = await handleAccounts(request);
+      const response = accountResponse ?? (await (await getServerEntry()).fetch(request, env, ctx));
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      const headers = new Headers(normalized.headers);
+      headers.set("X-Content-Type-Options", "nosniff");
+      headers.set("X-Frame-Options", "DENY");
+      headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+      headers.set("Permissions-Policy", "camera=(), microphone=(self), geolocation=()");
+      headers.set("Cache-Control", "no-store");
+      if (request.method === "GET" && !new URL(request.url).pathname.startsWith("/api/")) {
+        const cookie = await visitorCookie(request);
+        if (cookie) headers.append("Set-Cookie", cookie);
+      }
+      return new Response(normalized.body, {
+        status: normalized.status,
+        statusText: normalized.statusText,
+        headers,
+      });
     } catch (error) {
-      console.error(error);
+      console.error("Unhandled server error", error instanceof Error ? error.name : "unknown");
       return new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },

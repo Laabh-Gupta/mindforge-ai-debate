@@ -1,3 +1,4 @@
+import { practiceSearch } from "@/lib/practice-types";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { ChipRow, ModulePage } from "@/components/mindforge/ModulePage";
@@ -7,6 +8,7 @@ const description =
   "Argue business, policy, economic and strategy cases against sharp AI colleagues, with numbers, constraints and stakeholders.";
 
 export const Route = createFileRoute("/case-discussion")({
+  validateSearch: practiceSearch,
   head: () => ({
     meta: [
       { title },

@@ -21,13 +21,21 @@ export const Route = createFileRoute("/login")({
       { property: "og:description", content: description },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { error?: string | undefined } => ({
+    error: typeof search["error"] === "string" ? search["error"] : undefined,
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    search.error
+      ? "Google sign-in was not completed. If you already use email and password, sign in first, then connect Google from your profile."
+      : null,
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -61,7 +69,7 @@ function LoginPage() {
   return (
     <AuthLayout
       title="Welcome back"
-      subtitle="Your next argument is waiting."
+      subtitle="Sign in to your personal practice workspace."
       footer={
         <>
           New here?{" "}
@@ -73,7 +81,10 @@ function LoginPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p
+            role="alert"
+            className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
             {error}
           </p>
         )}
@@ -82,6 +93,8 @@ function LoginPage() {
           <Input
             id="email"
             type="email"
+            autoComplete="email"
+            maxLength={254}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -90,10 +103,20 @@ function LoginPage() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link
+              to="/forgot-password"
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <Input
             id="password"
             type="password"
+            autoComplete="current-password"
+            maxLength={128}
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -101,11 +124,7 @@ function LoginPage() {
             className="h-11 bg-secondary/40"
           />
         </div>
-        <Button
-          type="submit"
-          disabled={loading}
-          className="h-11 w-full bg-gradient-brand text-primary-foreground"
-        >
+        <Button type="submit" disabled={loading} className="h-11 w-full text-primary-foreground">
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Log in
         </Button>
@@ -117,7 +136,7 @@ function LoginPage() {
         <span className="h-px flex-1 bg-border" />
       </div>
 
-      <GoogleButton label="Continue with Google" onClick={handleGoogle} />
+      <GoogleButton label="Continue with Google" onClick={handleGoogle} disabled={loading} />
     </AuthLayout>
   );
 }

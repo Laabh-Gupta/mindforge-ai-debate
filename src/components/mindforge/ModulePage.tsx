@@ -13,7 +13,6 @@ export function ModulePage({
   modeId,
   title,
   subtitle,
-  aside,
 }: {
   modeId: ModeId;
   title: string;
@@ -24,7 +23,6 @@ export function ModulePage({
 
   return (
     <AppShell title={title} subtitle={subtitle} width="wide">
-      {aside && <div className="mb-8">{aside}</div>}
       {mode ? (
         <ModeSession key={mode.id} mode={mode} />
       ) : (

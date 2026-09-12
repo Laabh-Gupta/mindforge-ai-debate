@@ -1,3 +1,4 @@
+import { practiceSearch } from "@/lib/practice-types";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { ChipRow, ModulePage } from "@/components/mindforge/ModulePage";
@@ -7,6 +8,7 @@ const description =
   "Negotiate salary, investor terms, vendor pricing, client conflicts and disputes against an AI counterpart with a real walk-away point.";
 
 export const Route = createFileRoute("/negotiation")({
+  validateSearch: practiceSearch,
   head: () => ({
     meta: [
       { title },

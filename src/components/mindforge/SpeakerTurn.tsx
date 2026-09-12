@@ -1,6 +1,7 @@
+import { ConversationText } from "./ConversationText";
 const PALETTE = [
   "text-primary",
-  "text-accent",
+  "text-primary",
   "text-success",
   "text-warning",
   "text-destructive",
@@ -11,12 +12,14 @@ export type ParsedTurn = { speaker: string | null; content: string };
 
 /** Split a panel reply like "Name (Role): text" into individual speaker turns. */
 export function parseSpeakerTurns(text: string): ParsedTurn[] {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   const turns: ParsedTurn[] = [];
   for (const line of lines) {
-    const match = /^\*{0,2}([A-Za-z][A-Za-z.'’\- ]{1,40}(?:\([^)]{2,30}\))?)\*{0,2}\s*:\s*(.+)$/.exec(
-      line,
-    );
+    const match =
+      /^\*{0,2}([A-Za-z][A-Za-z.'’\- ]{1,40}(?:\([^)]{2,30}\))?)\*{0,2}\s*:\s*(.+)$/.exec(line);
     if (match && match[1] && match[2]) {
       turns.push({ speaker: match[1].replace(/\*/g, "").trim(), content: match[2].trim() });
     } else if (turns.length > 0) {
@@ -51,15 +54,13 @@ export function SpeakerBubble({ speaker, content }: ParsedTurn) {
       </span>
       <div className="min-w-0">
         {speaker && (
-          <p
-            className={`text-xs font-semibold tracking-wide uppercase ${speakerColor(speaker)}`}
-          >
+          <p className={`text-xs font-semibold tracking-wide uppercase ${speakerColor(speaker)}`}>
             {speaker}
           </p>
         )}
-        <p className="mt-1 text-sm leading-relaxed whitespace-pre-line text-foreground">
-          {content}
-        </p>
+        <div className="mt-2 text-sm leading-relaxed text-foreground">
+          <ConversationText text={content} />
+        </div>
       </div>
     </div>
   );

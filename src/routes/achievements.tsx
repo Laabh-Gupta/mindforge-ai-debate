@@ -1,72 +1,67 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Flame, Trophy, Zap, Target } from "lucide-react";
-
+import { Trophy, LockKeyhole, Check } from "lucide-react";
 import { AppShell } from "@/components/mindforge/AppShell";
-import { Progress } from "@/components/ui/progress";
-import { StatCard } from "@/components/mindforge/StatCard";
-
-const title = "Achievements — MindForge";
-const description =
-  "Badges, XP, levels, daily streaks and milestones you've unlocked while training on MindForge.";
-
+import { usePractice, useProgress } from "@/components/mindforge/PracticeProvider";
+import { getAchievements } from "@/lib/gamification";
 export const Route = createFileRoute("/achievements")({
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "Achievements | MindForge" }] }),
   component: AchievementsPage,
 });
-
-const BADGES = [
-  { name: "First Rebuttal", detail: "Survived your first counterargument", earned: true },
-  { name: "Fallacy Hunter", detail: "Spotted 10 fallacies in Observer Mode", earned: true },
-  { name: "Panel Presence", detail: "Led a group discussion round", earned: true },
-  { name: "Cool Head", detail: "Closed a tough negotiation", earned: false },
-  { name: "Stage Ready", detail: "Scored 85+ in Public Speaking", earned: false },
-  { name: "Case Cracker", detail: "Defended 5 case recommendations", earned: false },
-];
-
 function AchievementsPage() {
+  const { sessions } = usePractice();
+  const p = useProgress();
+  const badges = getAchievements(sessions);
   return (
-    <AppShell title="Achievements" subtitle="Badges, levels and milestones." width="wide">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Zap} label="XP" value="4,820" hint="Analyst III" />
-        <StatCard icon={Flame} label="Streak" value="12 days" hint="Personal best: 19" />
-        <StatCard icon={Trophy} label="Badges" value="3 / 6" hint="Half way there" />
-        <StatCard icon={Target} label="Milestones" value="7" hint="Across all modules" />
-      </div>
-
-      <section className="glass mt-6 rounded-3xl p-6">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Level 12 → Level 13</span>
-          <span className="font-medium">4,820 / 6,000 XP</span>
+    <AppShell
+      title="Achievements"
+      subtitle="Small milestones. Earned through practice."
+      width="wide"
+    >
+      <div className="mf-panel flex flex-wrap items-center justify-between gap-6 p-7">
+        <div>
+          <p className="text-sm text-muted-foreground">{p.rank}</p>
+          <h2 className="mt-2 text-3xl font-medium">Level {p.level}</h2>
+          <p className="mt-3 text-sm text-muted-foreground">{p.xpToNext} XP to the next level</p>
         </div>
-        <Progress value={80} className="mt-3 h-2" />
-      </section>
-
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {BADGES.map((b) => (
-          <article
-            key={b.name}
-            className={`glass rounded-3xl p-6 ${b.earned ? "" : "opacity-50"}`}
-          >
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-brand">
-              <Trophy className="h-5 w-5 text-primary-foreground" />
-            </span>
-            <h2 className="mt-4 text-base font-semibold">{b.name}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{b.detail}</p>
-            <p className="mt-3 text-xs text-primary uppercase">
-              {b.earned ? "Unlocked" : "Locked"}
-            </p>
+        <div className="text-right">
+          <p className="mf-number text-4xl">{p.xp.toLocaleString()} XP</p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {badges.filter((b) => b.unlocked).length} of {badges.length} milestones unlocked
+          </p>
+        </div>
+      </div>
+      <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {badges.map((b) => (
+          <article key={b.id} className="mf-panel p-6">
+            <div className="flex items-center justify-between">
+              {b.unlocked ? (
+                <Trophy className="size-6 text-primary" strokeWidth={1.5} />
+              ) : (
+                <LockKeyhole className="size-6 text-muted-foreground" strokeWidth={1.5} />
+              )}
+              <span className="text-xs text-muted-foreground">
+                {b.unlocked ? (
+                  <span className="flex items-center gap-1 text-primary">
+                    <Check className="size-3" />
+                    Unlocked
+                  </span>
+                ) : (
+                  `${Math.min(b.value, b.target)} / ${b.target}`
+                )}
+              </span>
+            </div>
+            <h2 className="mt-5 text-lg font-medium">{b.title}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{b.detail}</p>
+            <div className="mt-5 h-1 bg-secondary">
+              <div className="h-1 bg-primary/70" style={{ width: `${b.percent}%` }} />
+            </div>
           </article>
         ))}
-      </section>
+      </div>
+      <p className="mt-6 text-sm text-muted-foreground">
+        Each completed session earns 100 XP. Every 500 XP advances you one level. Re-scoring a
+        session never awards extra XP.
+      </p>
     </AppShell>
   );
 }
