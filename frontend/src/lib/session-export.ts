@@ -2,7 +2,7 @@ import type { PracticeSession } from "./practice-types";
 import { DIMENSION_LABELS, EVALUATION_DIMENSIONS } from "./evaluation-shared";
 export function sessionReportText(s: PracticeSession) {
   const lines = [
-    "MINDFORGE",
+    "ARGULAB",
     s.modeName,
     "",
     s.topic,
@@ -85,7 +85,7 @@ export function printReport(text: string, title: string) {
   }
   report.opener = null;
   const doc = report.document;
-  doc.title = `MindForge | ${title}`;
+  doc.title = `Argulab | ${title}`;
   const style = doc.createElement("style");
   style.textContent =
     "@page { size: A4; margin: 20mm 18mm; } body { max-width: 760px; margin: 40px auto; padding: 0 24px; color: #20262b; font: 10.5pt/1.5 Arial, sans-serif; } h1 { font-size: 24pt; letter-spacing: -1px; color: #23654c; } h2 { margin-top: 26px; font-size: 12pt; break-after: avoid; } p { white-space: pre-wrap; overflow-wrap: anywhere; orphans: 3; widows: 3; margin: 0 0 7px; break-inside: avoid; } .report-score { display: inline-block; box-sizing: border-box; width: 49%; margin: 0 0 4px; padding-right: 10px; vertical-align: top; font-size: 10pt; } .report-meta { color: #555; font-size: 10pt; } button { padding: 10px 18px; font: inherit; cursor: pointer; } @media print { body { margin: 0; padding: 0; max-width: none; } button, .print-help { display: none; } }";

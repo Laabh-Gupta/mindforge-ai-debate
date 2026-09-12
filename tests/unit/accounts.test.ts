@@ -23,7 +23,7 @@ const mail: string[] = [];
 const originalFetch = globalThis.fetch;
 process.env["SESSION_SECRET"] = "test-signed-visitor-secret-at-least-32-characters";
 process.env["RESEND_API_KEY"] = "test-mail-key";
-process.env["MAIL_FROM"] = "MindForge <test@example.test>";
+process.env["MAIL_FROM"] = "Argulab <test@example.test>";
 globalThis.fetch = Object.assign(async (input: RequestInfo | URL, init?: RequestInit) => {
   if (String(input) === "https://api.resend.com/emails") {
     mail.push(JSON.parse(String(init?.body)).text);

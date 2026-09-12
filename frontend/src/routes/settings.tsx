@@ -68,7 +68,7 @@ function Picker({
 const options = (values: string[]) =>
   values.map((value) => ({ value, label: value[0]!.toUpperCase() + value.slice(1) }));
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Settings | Argulab" }] }),
   component: SettingsPage,
 });
 function SettingsPage() {
@@ -131,7 +131,7 @@ function SettingsPage() {
             }}
           />
         </Row>
-        <Row label="Reduced motion" hint="Minimise animation throughout MindForge.">
+        <Row label="Reduced motion" hint="Minimise animation throughout Argulab.">
           <Label className="sr-only" htmlFor="reduced-motion">
             Reduced motion
           </Label>
@@ -172,7 +172,7 @@ function SettingsPage() {
                   null,
                   2,
                 ),
-                "mindforge-practice.json",
+                "argulab-practice.json",
                 "application/json",
               )
             }

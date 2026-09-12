@@ -58,7 +58,7 @@ export function Footer() {
         ))}
       </div>
       <div className="mx-auto mt-12 flex max-w-6xl flex-col gap-2 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <span>© 2026 MindForge. All rights reserved.</span>
+        <span>© 2026 Argulab. All rights reserved.</span>
         <span>Built for thinkers, not answer-seekers.</span>
       </div>
     </footer>

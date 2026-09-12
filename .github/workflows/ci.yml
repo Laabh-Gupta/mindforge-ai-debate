@@ -1,4 +1,4 @@
-name: Verify MindForge
+name: Verify Argulab
 on:
   push:
   pull_request:

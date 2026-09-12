@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 export const Route = createFileRoute("/profile")({
-  head: () => ({ meta: [{ title: "Your profile | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Your profile | Argulab" }] }),
   component: ProfilePage,
 });
 function ProfilePage() {

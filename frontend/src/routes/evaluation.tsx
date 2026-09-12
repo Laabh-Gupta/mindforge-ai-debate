@@ -33,7 +33,7 @@ export const Route = createFileRoute("/evaluation")({
   validateSearch: (search: Record<string, unknown>): { session?: string | undefined } => ({
     session: typeof search["session"] === "string" ? search["session"] : undefined,
   }),
-  head: () => ({ meta: [{ title: "Session review | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Session review | Argulab" }] }),
   component: EvaluationPage,
 });
 const inFlight = new Map<string, Promise<SessionEvaluation | null>>();

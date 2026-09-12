@@ -71,7 +71,7 @@ test("rescoring persists per-session weights and exports selectable report conte
   await page.getByRole("button", { name: "Export session", exact: true }).click();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("menuitem", { name: "Download TXT", exact: true }).click();
-  expect((await downloadPromise).suggestedFilename()).toBe("mindforge-" + id + ".txt");
+  expect((await downloadPromise).suggestedFilename()).toBe("argulab-" + id + ".txt");
   await page.goto("/dashboard");
   await expect(page.getByText("100 XP", { exact: true })).toBeVisible();
 });

@@ -147,7 +147,7 @@ export function VoiceRecorder() {
           <audio controls src={url} className="max-w-full" aria-label="Recorded answer" />
           <a
             href={url}
-            download={`mindforge-recording.${type.includes("mp4") ? "m4a" : "webm"}`}
+            download={`argulab-recording.${type.includes("mp4") ? "m4a" : "webm"}`}
             className="inline-flex items-center gap-2 text-sm text-primary"
           >
             <Download className="size-4" />

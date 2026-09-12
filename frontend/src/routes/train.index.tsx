@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/mindforge/AppShell";
 import { MODULE_NAV } from "@/lib/app-nav";
 
-const title = "Training Hub — MindForge";
+const title = "Training Hub — Argulab";
 const description =
   "Train debate, group discussions, interviews, public speaking, extempore, case discussions, negotiation and analysis with an AI communication coach.";
 

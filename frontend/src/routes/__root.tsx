@@ -78,14 +78,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "MindForge — Debate AI, Sharpen Your Thinking" },
+      { title: "Argulab — Debate AI, Sharpen Your Thinking" },
       {
         name: "description",
         content:
-          "MindForge helps you improve critical thinking, reasoning and interview performance by debating an AI that challenges every claim.",
+          "Argulab helps you improve critical thinking, reasoning and interview performance by debating an AI that challenges every claim.",
       },
-      { name: "author", content: "MindForge" },
-      { property: "og:title", content: "MindForge — Debate AI, Sharpen Your Thinking" },
+      { name: "author", content: "Argulab" },
+      { property: "og:title", content: "Argulab — Debate AI, Sharpen Your Thinking" },
       {
         property: "og:description",
         content: "Debate with AI, discover logical fallacies, and become a better thinker.",

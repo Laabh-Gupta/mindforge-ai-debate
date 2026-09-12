@@ -15,7 +15,7 @@ import { canComplete, type PracticeSession } from "@/lib/practice-types";
 import { useSessionClock } from "@/hooks/use-session-clock";
 export const Route = createFileRoute("/observer")({
   validateSearch: practiceSearch,
-  head: () => ({ meta: [{ title: "Observer Mode | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Observer Mode | Argulab" }] }),
   component: ObserverPage,
 });
 type Discussion = { turns: { speaker: string; content: string }[]; questions: string[] };

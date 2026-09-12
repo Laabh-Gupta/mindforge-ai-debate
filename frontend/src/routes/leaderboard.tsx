@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/leaderboard")({
-  head: () => ({ meta: [{ title: "Leaderboard | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Leaderboard | Argulab" }] }),
   component: LeaderboardPage,
 });
 type Entry = { display_name: string; sessions: number; xp: number };

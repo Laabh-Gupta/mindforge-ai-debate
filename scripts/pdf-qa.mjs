@@ -17,7 +17,7 @@ await page.getByRole("button", { name: "Export session", exact: true }).click();
 const popupPromise = page.waitForEvent("popup");
 await page.getByRole("menuitem", { name: "PDF / Print report", exact: true }).click();
 const popup = await popupPromise;
-await popup.getByRole("heading", { name: "MINDFORGE", exact: true }).waitFor();
+await popup.getByRole("heading", { name: "ARGULAB", exact: true }).waitFor();
 await popup.pdf({
   path: "output/qa/session-report.pdf",
   format: "A4",

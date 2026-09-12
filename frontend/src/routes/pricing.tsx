@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/mindforge/AppShell";
 import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/pricing")({
-  head: () => ({ meta: [{ title: "Access | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Access | Argulab" }] }),
   component: () => (
     <AppShell title="Practice access" subtitle="All training modes are available in this release.">
       <section className="mf-panel max-w-xl p-7">

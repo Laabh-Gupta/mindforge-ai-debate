@@ -7,9 +7,9 @@ import { getMode } from "@/lib/training-modes";
 export const Route = createFileRoute("/train/$mode")({
   head: ({ params }) => {
     const mode = getMode(params.mode);
-    const title = mode ? `${mode.name} — MindForge` : "Training — MindForge";
+    const title = mode ? `${mode.name} — Argulab` : "Training — Argulab";
     const description =
-      mode?.description ?? "Train real communication skills with an AI coach on MindForge.";
+      mode?.description ?? "Train real communication skills with an AI coach on Argulab.";
     return {
       meta: [
         { title },

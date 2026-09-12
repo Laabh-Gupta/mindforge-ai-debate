@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { describeAuthError, signInWithGoogle, signUpWithEmail } from "@/services/auth";
 
 export const Route = createFileRoute("/signup")({
-  head: () => ({ meta: [{ title: "Create an account | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Create an account | Argulab" }] }),
   component: SignupPage,
 });
 function SignupPage() {

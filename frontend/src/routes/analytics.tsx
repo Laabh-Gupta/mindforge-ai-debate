@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { printReport } from "@/lib/session-export";
 export const Route = createFileRoute("/analytics")({
-  head: () => ({ meta: [{ title: "Analytics | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Analytics | Argulab" }] }),
   component: AnalyticsPage,
 });
 function AnalyticsPage() {
@@ -30,7 +30,7 @@ function AnalyticsPage() {
     };
   }).reverse();
   const report = [
-    "MINDFORGE",
+    "ARGULAB",
     "Weekly Communication Report",
     "",
     `Week ending ${new Date().toLocaleDateString()}`,

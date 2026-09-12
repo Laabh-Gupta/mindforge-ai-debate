@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { ChipRow, ModulePage } from "@/components/mindforge/ModulePage";
 
-const title = "Extempore Practice — MindForge";
+const title = "Extempore Practice — Argulab";
 const description =
   "A surprise topic, 60 seconds of prep, 120 seconds of speech, then a detailed evaluation of how you thought on your feet.";
 

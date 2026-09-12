@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { ChipRow, ModulePage } from "@/components/mindforge/ModulePage";
 
-const title = "Interview Simulator — MindForge";
+const title = "Interview Simulator — Argulab";
 const description =
   "Practice HR, MBA, UPSC, RBI, consulting, finance, product, startup and technical interviews with an AI panel that asks real follow-ups.";
 

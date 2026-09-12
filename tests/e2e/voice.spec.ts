@@ -32,6 +32,6 @@ test("recording can pause, resume, play back and download without uploading audi
   );
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download recording", exact: true }).click();
-  expect((await downloadPromise).suggestedFilename()).toMatch(/mindforge-recording\.(webm|m4a)$/);
+  expect((await downloadPromise).suggestedFilename()).toMatch(/argulab-recording\.(webm|m4a)$/);
   expect(uploads).toEqual([]);
 });

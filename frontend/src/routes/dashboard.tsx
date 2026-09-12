@@ -11,7 +11,7 @@ import { SessionHistory, WeeklyPractice } from "@/components/mindforge/ProgressV
 import { getMode } from "@/lib/training-modes";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Dashboard | Argulab" }] }),
   component: Dashboard,
 });
 function Dashboard() {

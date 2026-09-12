@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { ChipRow, ModulePage } from "@/components/mindforge/ModulePage";
 
-const title = "Real-World Simulation — MindForge";
+const title = "Real-World Simulation — Argulab";
 const description =
   "Step into Shark Tank, a UN summit, an RBI MPC, a boardroom crisis, a courtroom or a press conference with a moderator and live AI participants.";
 

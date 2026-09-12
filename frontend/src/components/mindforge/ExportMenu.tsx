@@ -24,7 +24,7 @@ export function ExportMenu({ session }: { session: PracticeSession }) {
         <DropdownMenuItem onClick={() => printReport(text, session.modeName)}>
           PDF / Print report
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => downloadText(text, `mindforge-${session.id}.txt`)}>
+        <DropdownMenuItem onClick={() => downloadText(text, `argulab-${session.id}.txt`)}>
           Download TXT
         </DropdownMenuItem>
         <DropdownMenuItem

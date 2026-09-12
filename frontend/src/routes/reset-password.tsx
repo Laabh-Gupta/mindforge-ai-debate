@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Set a new password | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Set a new password | Argulab" }] }),
   validateSearch: (
     search: Record<string, unknown>,
   ): { token?: string | undefined; error?: string | undefined } => ({

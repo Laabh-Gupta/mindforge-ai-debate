@@ -4,7 +4,7 @@ import { AppShell } from "@/components/mindforge/AppShell";
 import { usePractice, useProgress } from "@/components/mindforge/PracticeProvider";
 import { getAchievements } from "@/lib/gamification";
 export const Route = createFileRoute("/achievements")({
-  head: () => ({ meta: [{ title: "Achievements | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Achievements | Argulab" }] }),
   component: AchievementsPage,
 });
 function AchievementsPage() {

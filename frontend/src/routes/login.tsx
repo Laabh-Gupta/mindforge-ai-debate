@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signInWithEmail, signInWithGoogle } from "@/services/auth";
 
-const title = "Log in to MindForge";
+const title = "Log in to Argulab";
 const description = "Sign in to continue your debate streak and keep sharpening your reasoning.";
 
 export const Route = createFileRoute("/login")({

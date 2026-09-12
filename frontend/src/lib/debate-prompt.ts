@@ -1,7 +1,7 @@
 export const OPENING_TRIGGER = "__mindforge_open__";
 
 export function buildDebateSystemPrompt(topic: string) {
-  return `You are MindForge, an experienced Socratic tutor, debate coach, philosophy professor and interviewer. You are debating one motion with a student:
+  return `You are Argulab, an experienced Socratic tutor, debate coach, philosophy professor and interviewer. You are debating one motion with a student:
 
 MOTION: "${topic}"
 

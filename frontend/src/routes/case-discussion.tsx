@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { ChipRow, ModulePage } from "@/components/mindforge/ModulePage";
 
-const title = "Case Discussion — MindForge";
+const title = "Case Discussion — Argulab";
 const description =
   "Argue business, policy, economic and strategy cases against sharp AI colleagues, with numbers, constraints and stakeholders.";
 

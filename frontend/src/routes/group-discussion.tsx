@@ -30,7 +30,7 @@ import { defaultProfileIdForMode, loadSelectedProfileId } from "@/lib/evaluation
 import { GD_CAST, GD_MODERATOR, GD_PARTICIPANTS, OPENING_TRIGGER } from "@/lib/session-prompt";
 import { summarizeGroupDiscussion } from "@/lib/session.functions";
 
-const TITLE = "Group Discussion Simulator — MindForge";
+const TITLE = "Group Discussion Simulator — Argulab";
 const DESCRIPTION =
   "Join a live MBA-style group discussion room with an AI moderator and five opinionated participants who argue with each other. Speak, get a real transcript, moderator feedback and a contribution summary.";
 

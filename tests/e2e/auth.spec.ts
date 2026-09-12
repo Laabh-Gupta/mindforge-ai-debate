@@ -57,7 +57,7 @@ test("sidebar scrolls independently and keeps its logo and progress visible", as
     page.locator("aside").getByText("XP to the next level", { exact: false }),
   ).toBeVisible();
   await expect(
-    page.locator("aside").getByRole("link", { name: "MindForge", exact: true }),
+    page.locator("aside").getByRole("link", { name: "Argulab", exact: true }),
   ).toBeVisible();
   expect(await page.locator("aside").boundingBox()).toEqual(before);
 });

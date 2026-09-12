@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const title = "Reset your MindForge password";
+const title = "Reset your Argulab password";
 const description = "Enter your email and we'll send you a link to set a new password.";
 
 export const Route = createFileRoute("/forgot-password")({

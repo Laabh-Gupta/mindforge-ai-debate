@@ -43,7 +43,7 @@ function createAuth(baseURL: string) {
   if (!secret || secret.length < 32)
     throw new Error("AUTH_SECRET must contain at least 32 characters.");
   return betterAuth({
-    appName: "MindForge",
+    appName: "Argulab",
     baseURL,
     secret,
     database: getPool(),
@@ -60,7 +60,7 @@ function createAuth(baseURL: string) {
             sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
               void sendAccountEmail(
                 user.email,
-                "Reset your MindForge password",
+                "Reset your Argulab password",
                 "Use this link within 30 minutes to set a new password:\n\n" +
                   url +
                   "\n\nIf you did not request this, you can ignore this email.",
@@ -84,7 +84,7 @@ function createAuth(baseURL: string) {
             }) => {
               void sendAccountEmail(
                 user.email,
-                "Verify your MindForge email",
+                "Verify your Argulab email",
                 "Confirm your email address using this link:\n\n" + url,
               );
             },

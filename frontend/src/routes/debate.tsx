@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ModulePage } from "@/components/mindforge/ModulePage";
 export const Route = createFileRoute("/debate")({
   validateSearch: practiceSearch,
-  head: () => ({ meta: [{ title: "Debate Arena | MindForge" }] }),
+  head: () => ({ meta: [{ title: "Debate Arena | Argulab" }] }),
   component: () => (
     <ModulePage
       modeId="debate"

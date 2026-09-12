@@ -4,7 +4,7 @@ import { Mic, Timer, Users } from "lucide-react";
 
 import { ModulePage } from "@/components/mindforge/ModulePage";
 
-const title = "Public Speaking Coach — MindForge";
+const title = "Public Speaking Coach — Argulab";
 const description =
   "Deliver a full speech and get it dissected for structure, clarity, persuasion, vocabulary and audience engagement.";
 
