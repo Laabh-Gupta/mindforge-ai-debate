@@ -1,3 +1,4 @@
+import { closeTestDatabase } from "./test-database.mjs";
 import { DatabaseSync } from "node:sqlite";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -48,8 +49,7 @@ try {
     "Import check passed: timestamps, verification and password hashes preserved; nonempty target refused.",
   );
 } finally {
-  await wire.stop();
-  await db.close();
+  await closeTestDatabase(wire, db);
   // Delete only this generated fixture, then its now-empty temporary directory.
   await rm(file);
   await (await import("node:fs/promises")).rmdir(directory);
