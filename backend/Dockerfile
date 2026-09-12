@@ -17,8 +17,10 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4000
+ENV NODE_EXTRA_CA_CERTS=/app/backend/certs/supabase-prod-ca-2021.crt
 COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/backend/dist ./backend/dist
+COPY --chown=node:node backend/certs ./backend/certs
 COPY package.json ./
 USER node
 EXPOSE 4000

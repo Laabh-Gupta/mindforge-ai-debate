@@ -26,7 +26,19 @@ Keep actual secrets in backend/.env. The committed .env.example files contain em
 
 Open the existing Supabase project, select **Connect**, and copy the **Session pooler** PostgreSQL URI (port 5432). This supports IPv4 connections from a persistent backend. Replace only the password placeholder with your database password, URL-encoding special characters. The Supabase anon/publishable API key is not a PostgreSQL password.
 
-Set DATABASE_URL in backend/.env locally and in Render's secret environment settings. Use SSL certificate verification, for example the connection URI with sslmode=verify-full. If your project requires a CA, configure its downloaded certificate with NODE_EXTRA_CA_CERTS on the server. Do not disable TLS verification.
+Set DATABASE_URL in backend/.env locally and in Render's secret environment settings. The backend enforces sslmode=verify-full. The Docker image includes Supabase's public Root 2021 CA certificate and configures NODE_EXTRA_CA_CERTS so Render verifies the database certificate. The certificate is public, contains no private key, and comes from the Download certificate link in Supabase's Database Settings. Do not disable TLS verification.
+
+For local Node commands against Supabase, set the certificate path in your shell first. In Git Bash, from the repository root:
+
+```sh
+export NODE_EXTRA_CA_CERTS="$PWD/backend/certs/supabase-prod-ca-2021.crt"
+```
+
+In PowerShell:
+
+```powershell
+$env:NODE_EXTRA_CA_CERTS=(Resolve-Path 'backend/certs/supabase-prod-ca-2021.crt').Path
+```
 
 Keep the new **mindforge** schema out of Supabase's Data API exposed schemas. The backend initializes its application tables and Better Auth tables there on startup. It does not change existing public tables, Supabase Auth users, or historical migrations. The SQL connection role must be able to create and use this schema. All user access goes through server ownership checks; no database keys are sent to the browser.
 
